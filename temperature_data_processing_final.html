@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Justin Baumann">
+
+<title>Hundley et al temperature analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="temperature_data_processing_final_files/libs/clipboard/clipboard.min.js"></script>
+<script src="temperature_data_processing_final_files/libs/quarto-html/quarto.js"></script>
+<script src="temperature_data_processing_final_files/libs/quarto-html/popper.min.js"></script>
+<script src="temperature_data_processing_final_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="temperature_data_processing_final_files/libs/quarto-html/anchor.min.js"></script>
+<link href="temperature_data_processing_final_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="temperature_data_processing_final_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="temperature_data_processing_final_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="temperature_data_processing_final_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="temperature_data_processing_final_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#load-packages" id="toc-load-packages" class="nav-link active" data-scroll-target="#load-packages"><strong>Load Packages</strong></a></li>
+  <li><a href="#download-sst-data-from-erddap-only-do-this-once" id="toc-download-sst-data-from-erddap-only-do-this-once" class="nav-link" data-scroll-target="#download-sst-data-from-erddap-only-do-this-once"><strong>Download SST Data from ERDDAP</strong> –&gt; ONLY DO THIS ONCE</a></li>
+  <li><a href="#read-in-data" id="toc-read-in-data" class="nav-link" data-scroll-target="#read-in-data"><strong>Read in Data</strong></a></li>
+  <li><a href="#prepare-in-situ-data" id="toc-prepare-in-situ-data" class="nav-link" data-scroll-target="#prepare-in-situ-data"><strong>prepare in-situ data</strong></a>
+  <ul class="collapse">
+  <li><a href="#make-silk-false-date-into-a-date-object" id="toc-make-silk-false-date-into-a-date-object" class="nav-link" data-scroll-target="#make-silk-false-date-into-a-date-object">make silk &amp; False date into a date object</a></li>
+  <li><a href="#add-site-column-and-combine-data" id="toc-add-site-column-and-combine-data" class="nav-link" data-scroll-target="#add-site-column-and-combine-data">add site column and combine data</a></li>
+  <li><a href="#bind-together-and-save-as-.csv" id="toc-bind-together-and-save-as-.csv" class="nav-link" data-scroll-target="#bind-together-and-save-as-.csv">bind together and save as .csv</a></li>
+  <li><a href="#calculate-daily-average-temps-to-match-1-measurement-per-day-sst-data-and-preferred-mhw-and-dhw-calcs" id="toc-calculate-daily-average-temps-to-match-1-measurement-per-day-sst-data-and-preferred-mhw-and-dhw-calcs" class="nav-link" data-scroll-target="#calculate-daily-average-temps-to-match-1-measurement-per-day-sst-data-and-preferred-mhw-and-dhw-calcs">calculate daily average temps to match 1 measurement per day SST data and preferred MHW and DHW calcs</a></li>
+  </ul></li>
+  <li><a href="#prepare-satellite-data" id="toc-prepare-satellite-data" class="nav-link" data-scroll-target="#prepare-satellite-data"><strong>prepare satellite data</strong></a>
+  <ul class="collapse">
+  <li><a href="#make-date-column-a-date-object" id="toc-make-date-column-a-date-object" class="nav-link" data-scroll-target="#make-date-column-a-date-object">make date column a date object</a></li>
+  <li><a href="#add-site-column-and-combine-data-1" id="toc-add-site-column-and-combine-data-1" class="nav-link" data-scroll-target="#add-site-column-and-combine-data-1">add site column and combine data</a></li>
+  </ul></li>
+  <li><a href="#comparing-sat-and-in-situ-data" id="toc-comparing-sat-and-in-situ-data" class="nav-link" data-scroll-target="#comparing-sat-and-in-situ-data"><strong>Comparing Sat and in-situ data</strong></a>
+  <ul class="collapse">
+  <li><a href="#difference-between-sat-and-in-situ-daily-values" id="toc-difference-between-sat-and-in-situ-daily-values" class="nav-link" data-scroll-target="#difference-between-sat-and-in-situ-daily-values">Difference between sat and in-situ daily values</a></li>
+  </ul></li>
+  <li><a href="#dhw-using-dbcadhw" id="toc-dhw-using-dbcadhw" class="nav-link" data-scroll-target="#dhw-using-dbcadhw"><strong>DHW using dbcaDHW</strong></a></li>
+  <li><a href="#dhw-calcs" id="toc-dhw-calcs" class="nav-link" data-scroll-target="#dhw-calcs">DHW calcs</a>
+  <ul class="collapse">
+  <li><a href="#observation-period-hotspot-dhw-calc-using-tempdat-in-situ-with-baselines-mmmt-from-satellite" id="toc-observation-period-hotspot-dhw-calc-using-tempdat-in-situ-with-baselines-mmmt-from-satellite" class="nav-link" data-scroll-target="#observation-period-hotspot-dhw-calc-using-tempdat-in-situ-with-baselines-mmmt-from-satellite">observation period, hotspot &amp; dhw calc USING TEMPDAT (in-situ) with baselines (MMMT) from satellite</a></li>
+  </ul></li>
+  <li><a href="#heatwaver-mhw-and-climatology-calcs" id="toc-heatwaver-mhw-and-climatology-calcs" class="nav-link" data-scroll-target="#heatwaver-mhw-and-climatology-calcs">heatwaveR MHW and climatology calcs</a>
+  <ul class="collapse">
+  <li><a href="#part-1-climatologies" id="toc-part-1-climatologies" class="nav-link" data-scroll-target="#part-1-climatologies">Part 1: Climatologies</a>
+  <ul class="collapse">
+  <li><a href="#reshape-the-data-as-required" id="toc-reshape-the-data-as-required" class="nav-link" data-scroll-target="#reshape-the-data-as-required">reshape the data as required</a></li>
+  <li><a href="#build-climatolgies" id="toc-build-climatolgies" class="nav-link" data-scroll-target="#build-climatolgies">Build climatolgies</a></li>
+  <li><a href="#detect-mhw-using-detect_event" id="toc-detect-mhw-using-detect_event" class="nav-link" data-scroll-target="#detect-mhw-using-detect_event">detect MHW using detect_event</a></li>
+  <li><a href="#calculate-exceedance-of-mmmt-from-previous-calculations-30.33-at-silk-30.36-at-false" id="toc-calculate-exceedance-of-mmmt-from-previous-calculations-30.33-at-silk-30.36-at-false" class="nav-link" data-scroll-target="#calculate-exceedance-of-mmmt-from-previous-calculations-30.33-at-silk-30.36-at-false">calculate exceedance of MMMT from previous calculations (30.33 at Silk, 30.36 at False)</a></li>
+  <li><a href="#joinging-the-two-mhw-datasets-false-and-silk" id="toc-joinging-the-two-mhw-datasets-false-and-silk" class="nav-link" data-scroll-target="#joinging-the-two-mhw-datasets-false-and-silk">joinging the two MHW datasets (false and silk)</a></li>
+  </ul></li>
+  <li><a href="#some-visualizations" id="toc-some-visualizations" class="nav-link" data-scroll-target="#some-visualizations">Some visualizations</a></li>
+  <li><a href="#calling-some-useful-graphs" id="toc-calling-some-useful-graphs" class="nav-link" data-scroll-target="#calling-some-useful-graphs">calling some useful graphs</a></li>
+  </ul></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="temperature_data_processing_final.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Hundley et al temperature analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Justin Baumann </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="load-packages" class="level1">
+<h1><strong>Load Packages</strong></h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#load packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibbletime)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#devtools::install_github("dbca-wa/dbcaDHW")</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dbcaDHW) <span class="co">#DHW and other CRW metrics</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(heatwaveR)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rerddap)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="download-sst-data-from-erddap-only-do-this-once" class="level1">
+<h1><strong>Download SST Data from ERDDAP</strong> –&gt; ONLY DO THIS ONCE</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sst_info<span class="ot">&lt;-</span>rerddap<span class="sc">::</span><span class="fu">info</span>(<span class="at">datasetid =</span> <span class="st">"jplMURSST42"</span>, <span class="at">url =</span> <span class="st">"https://coastwatch.pfeg.noaa.gov/erddap/"</span>) <span class="co">#datasetid should come straight from ERDDAP</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#False MUR --&gt; </span><span class="al">NOTE</span><span class="co"> that this is QUITE a bit south of our site, but the nearest NS pixel we can get that isn't on land!</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>false_murSST <span class="ot">=</span> <span class="fu">griddap</span>(sst_info, </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                       <span class="at">latitude =</span> <span class="fu">c</span>(<span class="fl">16.375</span>, <span class="fl">16.375</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                       <span class="at">longitude =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">88.375</span>,<span class="sc">-</span><span class="fl">88.375</span>),</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                       <span class="at">time=</span><span class="fu">c</span>(<span class="st">"2002-09-02"</span>,<span class="st">"2024-05-18"</span>), </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">fmt =</span> <span class="st">"csv"</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(false_murSST, <span class="at">file=</span><span class="st">'false_MURSST.csv'</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Silk MUR --&gt; THIS IS REALLY close to the actual site!</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>silk_murSST <span class="ot">=</span> <span class="fu">griddap</span>(sst_info, </span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                       <span class="at">latitude =</span> <span class="fu">c</span>(<span class="fl">16.451775</span>, <span class="fl">16.451775</span>),</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>                       <span class="at">longitude =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">88.045393</span>,<span class="sc">-</span><span class="fl">88.045393</span>),</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>                       <span class="at">time=</span><span class="fu">c</span>(<span class="st">"2002-09-02"</span>,<span class="st">"2024-05-18"</span>), </span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>                       <span class="at">fmt =</span> <span class="st">"csv"</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(silk_murSST, <span class="at">file=</span><span class="st">'silk_murSST.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="read-in-data" class="level1">
+<h1><strong>Read in Data</strong></h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>false<span class="ot">&lt;-</span><span class="fu">read_csv</span>(<span class="st">"https://raw.githubusercontent.com/jbaumann3/Hundley_et_al_Belize_RT_5_year/main/foh_false_2018_2023.csv"</span>) <span class="co">#insitu</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>false_MURSST<span class="ot">&lt;-</span><span class="fu">read_csv</span>(<span class="st">"https://raw.githubusercontent.com/jbaumann3/Hundley_et_al_Belize_RT_5_year/main/false_MURSST.csv"</span>) <span class="co">#satellite</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>silk<span class="ot">&lt;-</span><span class="fu">read.csv</span>(<span class="st">"https://raw.githubusercontent.com/jbaumann3/Hundley_et_al_Belize_RT_5_year/main/foh_silk_2015_2023.csv"</span>) <span class="co">#insitu</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>silk_murSST<span class="ot">&lt;-</span><span class="fu">read_csv</span>(<span class="st">"https://raw.githubusercontent.com/jbaumann3/Hundley_et_al_Belize_RT_5_year/main/silk_murSST.csv"</span>)<span class="co">#satellite</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="prepare-in-situ-data" class="level1">
+<h1><strong>prepare in-situ data</strong></h1>
+<section id="make-silk-false-date-into-a-date-object" class="level2">
+<h2 class="anchored" data-anchor-id="make-silk-false-date-into-a-date-object">make silk &amp; False date into a date object</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>silk<span class="sc">$</span>date<span class="ot">&lt;-</span> <span class="fu">mdy_hm</span>(silk<span class="sc">$</span>date)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>false<span class="sc">$</span>date<span class="ot">&lt;-</span> <span class="fu">mdy_hm</span>(false<span class="sc">$</span>date)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(silk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                     date Temp_C year month day hour min sec
+76644 2024-06-10 18:00:00 30.976 2024     6  10   18   0   0
+76645 2024-06-10 19:00:00 30.900 2024     6  10   19   0   0
+76646 2024-06-10 20:00:00 30.722 2024     6  10   20   0   0
+76647 2024-06-10 21:00:00 30.722 2024     6  10   21   0   0
+76648 2024-06-10 22:00:00 30.722 2024     6  10   22   0   0
+76649 2024-06-10 23:00:00 30.798 2024     6  10   23   0   0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(false)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 8
+  date                Temp_C  year month   day  hour   min   sec
+  &lt;dttm&gt;               &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+1 2024-03-29 12:00:00   26.5  2024     3    29    12     0     0
+2 2024-03-29 13:00:00   30.1  2024     3    29    13     0     0
+3 2024-03-29 14:00:00   30.4  2024     3    29    14     0     0
+4 2024-03-29 15:00:00   23.8  2024     3    29    15     0     0
+5 2024-03-29 16:00:00   23.2  2024     3    29    16     0     0
+6 2024-03-29 17:00:00   23.4  2024     3    29    17     0     0</code></pre>
+</div>
+</div>
+</section>
+<section id="add-site-column-and-combine-data" class="level2">
+<h2 class="anchored" data-anchor-id="add-site-column-and-combine-data">add site column and combine data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>false<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'False Caye'</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>silk<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'Silk Caye'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="bind-together-and-save-as-.csv" class="level2">
+<h2 class="anchored" data-anchor-id="bind-together-and-save-as-.csv">bind together and save as .csv</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>tempdat<span class="ot">&lt;-</span><span class="fu">rbind</span>(false,silk)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tempdat,file='bz_rt_5yr_temp.csv')</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="calculate-daily-average-temps-to-match-1-measurement-per-day-sst-data-and-preferred-mhw-and-dhw-calcs" class="level2">
+<h2 class="anchored" data-anchor-id="calculate-daily-average-temps-to-match-1-measurement-per-day-sst-data-and-preferred-mhw-and-dhw-calcs">calculate daily average temps to match 1 measurement per day SST data and preferred MHW and DHW calcs</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>daily<span class="ot">&lt;-</span> tempdat <span class="sc">%&gt;%</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">day=</span><span class="fu">as_date</span>(date)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(site, day) <span class="sc">%&gt;%</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(date) <span class="sc">%&gt;%</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">meandailytemp=</span><span class="fu">mean</span>(Temp_C), <span class="at">sd=</span><span class="fu">sd</span>(Temp_C), <span class="at">n=</span><span class="fu">n</span>(), <span class="at">se=</span>sd<span class="sc">/</span><span class="fu">sqrt</span>(n))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'site'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>falseday<span class="ot">&lt;-</span>daily <span class="sc">%&gt;%</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(site<span class="sc">==</span><span class="st">'False Caye'</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>silkday<span class="ot">&lt;-</span>daily <span class="sc">%&gt;%</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(site<span class="sc">==</span><span class="st">'Silk Caye'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="prepare-satellite-data" class="level1">
+<h1><strong>prepare satellite data</strong></h1>
+<section id="make-date-column-a-date-object" class="level2">
+<h2 class="anchored" data-anchor-id="make-date-column-a-date-object">make date column a date object</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>false_MURSST</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7,724 × 9
+    ...1 time                latitude longitude analysed_sst analysis_error
+   &lt;dbl&gt; &lt;dttm&gt;                 &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;
+ 1     1 2002-09-02 09:00:00     16.4     -88.4         29.4           0.39
+ 2     2 2002-09-03 09:00:00     16.4     -88.4         29.4           0.39
+ 3     3 2002-09-04 09:00:00     16.4     -88.4         29.4           0.39
+ 4     4 2002-09-05 09:00:00     16.4     -88.4         29.8           0.4 
+ 5     5 2002-09-06 09:00:00     16.4     -88.4         29.9           0.39
+ 6     6 2002-09-07 09:00:00     16.4     -88.4         30.1           0.39
+ 7     7 2002-09-08 09:00:00     16.4     -88.4         30.4           0.37
+ 8     8 2002-09-09 09:00:00     16.4     -88.4         30.5           0.36
+ 9     9 2002-09-10 09:00:00     16.4     -88.4         30.4           0.36
+10    10 2002-09-11 09:00:00     16.4     -88.4         30.2           0.37
+# ℹ 7,714 more rows
+# ℹ 3 more variables: mask &lt;dbl&gt;, sea_ice_fraction &lt;lgl&gt;, sst_anomaly &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>false_MURSST<span class="ot">&lt;-</span> false_MURSST <span class="sc">%&gt;%</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(...<span class="dv">1</span>,sea_ice_fraction, mask)) <span class="sc">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">ymd_hms</span>(time))</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>silk_MURSST<span class="ot">&lt;-</span> silk_murSST <span class="sc">%&gt;%</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(...<span class="dv">1</span>,sea_ice_fraction, mask)) <span class="sc">%&gt;%</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">ymd_hms</span>(time))</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>silk_MURSST</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7,724 × 7
+   time                latitude longitude analysed_sst analysis_error
+   &lt;dttm&gt;                 &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;
+ 1 2002-09-02 09:00:00     16.4     -88.1         29.4           0.38
+ 2 2002-09-03 09:00:00     16.4     -88.1         29.5           0.37
+ 3 2002-09-04 09:00:00     16.4     -88.1         29.6           0.37
+ 4 2002-09-05 09:00:00     16.4     -88.1         29.8           0.38
+ 5 2002-09-06 09:00:00     16.4     -88.1         29.8           0.37
+ 6 2002-09-07 09:00:00     16.4     -88.1         29.9           0.37
+ 7 2002-09-08 09:00:00     16.4     -88.1         30.0           0.36
+ 8 2002-09-09 09:00:00     16.4     -88.1         29.8           0.36
+ 9 2002-09-10 09:00:00     16.4     -88.1         29.5           0.36
+10 2002-09-11 09:00:00     16.4     -88.1         29.7           0.38
+# ℹ 7,714 more rows
+# ℹ 2 more variables: sst_anomaly &lt;dbl&gt;, date &lt;dttm&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="add-site-column-and-combine-data-1" class="level2">
+<h2 class="anchored" data-anchor-id="add-site-column-and-combine-data-1">add site column and combine data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>false_MURSST<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'False Caye'</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>silk_MURSST<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'Silk Caye'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>##combine datasets into 1</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>satdat<span class="ot">&lt;-</span><span class="fu">rbind</span>(false_MURSST,silk_MURSST) <span class="sc">%&gt;%</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(analysed_sst) <span class="sc">%&gt;%</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">analysed_sst =</span> <span class="fu">as.numeric</span>(analysed_sst)) <span class="sc">%&gt;%</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">analysis_error=</span><span class="fu">as.numeric</span>(analysis_error)) <span class="sc">%&gt;%</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sst_anomaly=</span><span class="fu">as.numeric</span>(sst_anomaly))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="comparing-sat-and-in-situ-data" class="level1">
+<h1><strong>Comparing Sat and in-situ data</strong></h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">#trim and combine</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>satdat<span class="sc">$</span>measurement <span class="ot">&lt;-</span> <span class="st">"Satellite JPL MUR"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>daily<span class="sc">$</span>measurement <span class="ot">&lt;-</span> <span class="st">"in-situ"</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>lilsat<span class="ot">&lt;-</span> satdat <span class="sc">%&gt;%</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">as.Date</span>(date)) <span class="sc">%&gt;%</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, analysed_sst, measurement, site) <span class="sc">%&gt;%</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">temp=</span>analysed_sst) <span class="sc">%&gt;%</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>analysed_sst)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>liltemp<span class="ot">&lt;-</span> daily <span class="sc">%&gt;%</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(day, meandailytemp, measurement, site) <span class="sc">%&gt;%</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">temp=</span>meandailytemp, <span class="at">date=</span>day) <span class="sc">%&gt;%</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(meandailytemp, day))</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>alltemp<span class="ot">&lt;-</span> <span class="fu">rbind</span>(lilsat, liltemp)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>satandinsitu<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data=</span>alltemp, <span class="fu">aes</span>(<span class="at">x=</span>date, <span class="at">y=</span>temp, <span class="at">color=</span>measurement))<span class="sc">+</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">linewidth=</span><span class="fl">0.75</span>)<span class="sc">+</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()<span class="sc">+</span></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values=</span><span class="fu">c</span>(<span class="st">'firebrick2'</span>,<span class="st">'black'</span>))<span class="sc">+</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"6 months"</span>, <span class="at">limits=</span><span class="fu">ymd</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>, <span class="st">'2024-01-01'</span>)), <span class="at">expand=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>))<span class="sc">+</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x=</span><span class="fu">element_text</span>(<span class="at">angle=</span><span class="dv">90</span>), <span class="at">text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>))<span class="sc">+</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>site, <span class="at">ncol=</span><span class="dv">1</span>)</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>satandinsitu</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 6623 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<section id="difference-between-sat-and-in-situ-daily-values" class="level2">
+<h2 class="anchored" data-anchor-id="difference-between-sat-and-in-situ-daily-values">Difference between sat and in-situ daily values</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>widetemp<span class="ot">&lt;-</span> alltemp <span class="sc">%&gt;%</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> measurement, <span class="at">values_from =</span> temp) <span class="sc">%&gt;%</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(<span class="fu">c</span>(<span class="st">`</span><span class="at">Satellite JPL MUR</span><span class="st">`</span>, <span class="st">`</span><span class="at">in-situ</span><span class="st">`</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff=</span> <span class="st">`</span><span class="at">in-situ</span><span class="st">`</span><span class="sc">-</span><span class="st">`</span><span class="at">Satellite JPL MUR</span><span class="st">`</span>)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>widetemp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5,115 × 5
+   date       site       `Satellite JPL MUR` `in-situ`    diff
+   &lt;date&gt;     &lt;chr&gt;                    &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+ 1 2018-12-05 False Caye                28.2      28.8  0.622 
+ 2 2018-12-06 False Caye                28.5      28.6  0.105 
+ 3 2018-12-07 False Caye                28.4      28.5  0.106 
+ 4 2018-12-08 False Caye                28.1      28.5  0.380 
+ 5 2018-12-09 False Caye                28.0      28.6  0.535 
+ 6 2018-12-10 False Caye                28.0      28.3  0.357 
+ 7 2018-12-11 False Caye                27.9      27.6 -0.268 
+ 8 2018-12-12 False Caye                27.8      27.1 -0.636 
+ 9 2018-12-13 False Caye                27.4      27.5  0.0770
+10 2018-12-14 False Caye                27.5      27.8  0.364 
+# ℹ 5,105 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>meandiff<span class="ot">&lt;-</span> widetemp <span class="sc">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean=</span> <span class="fu">mean</span>(diff), <span class="at">sd=</span><span class="fu">sd</span>(diff), <span class="at">n=</span><span class="fu">n</span>(), <span class="at">se=</span>sd<span class="sc">/</span><span class="fu">sqrt</span>(n))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>meandiff</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+   mean    sd     n      se
+  &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt;
+1 0.392 0.491  5115 0.00687</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#In-situ is ~ 0.391 +/- 0.00728 (SEM) higher than satellite across this time period</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>satvsinsitu<span class="ot">&lt;-</span><span class="fu">ggplot</span>(widetemp, <span class="fu">aes</span>(<span class="at">x=</span>date, <span class="at">y=</span>diff, <span class="at">color=</span>site))<span class="sc">+</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept=</span><span class="dv">0</span>, <span class="at">linetype=</span><span class="st">'dashed'</span>)<span class="sc">+</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()<span class="sc">+</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>site, <span class="at">ncol=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values=</span><span class="fu">c</span>(<span class="st">'firebrick'</span>,<span class="st">'dodgerblue3'</span>))<span class="sc">+</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="cn">NULL</span>, <span class="at">y=</span><span class="st">'In-situ temp - SST'</span>)</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>satvsinsitu</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="dhw-using-dbcadhw" class="level1">
+<h1><strong>DHW using <a href="https://dbca-wa.github.io/dbcaDHW/index.html">dbcaDHW</a></strong></h1>
+<p>#Trying max monthly means using our satellite data as past dataset (pre-2020)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(satdat)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 9
+  time                latitude longitude analysed_sst analysis_error sst_anomaly
+  &lt;dttm&gt;                 &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;       &lt;dbl&gt;
+1 2002-09-02 09:00:00     16.4     -88.4         29.4           0.39      -0.5  
+2 2002-09-03 09:00:00     16.4     -88.4         29.4           0.39      -0.518
+3 2002-09-04 09:00:00     16.4     -88.4         29.4           0.39      -0.439
+4 2002-09-05 09:00:00     16.4     -88.4         29.8           0.4       -0.025
+5 2002-09-06 09:00:00     16.4     -88.4         29.9           0.39      -0.109
+6 2002-09-07 09:00:00     16.4     -88.4         30.1           0.39       0.088
+# ℹ 3 more variables: date &lt;dttm&gt;, site &lt;chr&gt;, measurement &lt;chr&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>mmtdata <span class="ot">&lt;-</span> satdat <span class="sc">%&gt;%</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#tidyr::gather("site", "Temp_C", 2:all_of(g_num)) %&gt;%</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(date <span class="sc">&lt;</span> <span class="st">"2017-12-01"</span>) <span class="sc">%&gt;%</span> <span class="co">#define past (pre-experiment!)</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">month =</span> <span class="fu">month</span>(date),</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">year =</span> <span class="fu">year</span>(date)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(site, year, month) <span class="sc">%&gt;%</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(date, analysed_sst) <span class="sc">%&gt;%</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">avg =</span> <span class="fu">mean</span>(analysed_sst)) <span class="sc">%&gt;%</span> <span class="co">#obtain mthly avgs</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(site) <span class="sc">%&gt;%</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">mmmt =</span> <span class="fu">max</span>(avg)) <span class="co">#obtain max mthly avg</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'site', 'year'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>mmtdata <span class="co">#shows average MMM for each site from 2002-2020 (18 years-- length of dataset)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  site        mmmt
+  &lt;chr&gt;      &lt;dbl&gt;
+1 False Caye  30.4
+2 Silk Caye   30.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co">#False=30.36</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="co">#Silk=30.33</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="dhw-calcs" class="level1">
+<h1>DHW calcs</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="do">## function for rolling cusum of 12 weeks - 84 days)</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>dhw_calc_12 <span class="ot">&lt;-</span> tibbletime<span class="sc">::</span><span class="fu">rollify</span>(sum, <span class="at">window =</span> <span class="dv">84</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="observation-period-hotspot-dhw-calc-using-tempdat-in-situ-with-baselines-mmmt-from-satellite" class="level2">
+<h2 class="anchored" data-anchor-id="observation-period-hotspot-dhw-calc-using-tempdat-in-situ-with-baselines-mmmt-from-satellite">observation period, hotspot &amp; dhw calc USING TEMPDAT (in-situ) with baselines (MMMT) from satellite</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="do">## observation period, hotspot &amp; dhw calc</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>dhw <span class="ot">&lt;-</span> tempdat <span class="sc">%&gt;%</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#tidyr::gather("site", "sst", 2:all_of(g_num)) %&gt;%</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(date <span class="sc">&gt;=</span> <span class="st">"2017-12-01"</span>) <span class="sc">%&gt;%</span> <span class="co">#define present</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">month =</span> <span class="fu">month</span>(date)) <span class="sc">%&gt;%</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">full_join</span>(mmtdata, <span class="at">by =</span> <span class="st">"site"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">hspt =</span> Temp_C <span class="sc">-</span> mmmt,</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">hsptm =</span> <span class="fu">ifelse</span>(hspt <span class="sc">&gt;=</span> <span class="dv">1</span>, hspt, <span class="dv">0</span>),</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">dhw =</span> <span class="fu">dhw_calc_12</span>(hsptm)<span class="sc">*</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">7</span>)) <span class="sc">%&gt;%</span> <span class="co">#hotspot based on 1 degree</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>month, <span class="sc">-</span>hsptm)</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>dhw</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 100,338 × 11
+   date                Temp_C  year   day  hour   min   sec site      mmmt  hspt
+   &lt;dttm&gt;               &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt; &lt;dbl&gt;
+ 1 2018-12-05 05:00:00   28.5  2018     5     4    59    59 False C…  30.4 -1.84
+ 2 2018-12-05 06:00:00   28.5  2018     5     6     0     0 False C…  30.4 -1.89
+ 3 2018-12-05 07:00:00   28.5  2018     5     7     0     0 False C…  30.4 -1.82
+ 4 2018-12-05 08:00:00   28.5  2018     5     7    59    59 False C…  30.4 -1.87
+ 5 2018-12-05 09:00:00   28.5  2018     5     9     0     0 False C…  30.4 -1.82
+ 6 2018-12-05 10:00:00   28.5  2018     5    10     0     0 False C…  30.4 -1.84
+ 7 2018-12-05 11:00:00   28.5  2018     5    10    59    59 False C…  30.4 -1.84
+ 8 2018-12-05 12:00:00   28.5  2018     5    12     0     0 False C…  30.4 -1.87
+ 9 2018-12-05 13:00:00   28.4  2018     5    13     0     0 False C…  30.4 -1.92
+10 2018-12-05 14:00:00   28.6  2018     5    13    59    59 False C…  30.4 -1.74
+# ℹ 100,328 more rows
+# ℹ 1 more variable: dhw &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(dhw)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 11
+  date                Temp_C  year   day  hour   min   sec site       mmmt  hspt
+  &lt;dttm&gt;               &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt;
+1 2024-06-10 18:00:00   31.0  2024    10    18     0     0 Silk Caye  30.3 0.644
+2 2024-06-10 19:00:00   30.9  2024    10    19     0     0 Silk Caye  30.3 0.568
+3 2024-06-10 20:00:00   30.7  2024    10    20     0     0 Silk Caye  30.3 0.390
+4 2024-06-10 21:00:00   30.7  2024    10    21     0     0 Silk Caye  30.3 0.390
+5 2024-06-10 22:00:00   30.7  2024    10    22     0     0 Silk Caye  30.3 0.390
+6 2024-06-10 23:00:00   30.8  2024    10    23     0     0 Silk Caye  30.3 0.466
+# ℹ 1 more variable: dhw &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>#max DHW</p>
+<p>Table of DHW by year of the experiment</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>dhwm <span class="ot">&lt;-</span> dhw <span class="sc">%&gt;%</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(site, year) <span class="sc">%&gt;%</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">dhwm =</span> <span class="fu">max</span>(dhw, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'site'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>dhwm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">site</th>
+<th style="text-align: right;">year</th>
+<th style="text-align: right;">dhwm</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2018</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2019</td>
+<td style="text-align: right;">11.256848</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2020</td>
+<td style="text-align: right;">18.358924</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2021</td>
+<td style="text-align: right;">9.566876</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2022</td>
+<td style="text-align: right;">4.597010</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2023</td>
+<td style="text-align: right;">24.806829</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2024</td>
+<td style="text-align: right;">6.214305</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2017</td>
+<td style="text-align: right;">6.214305</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2018</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2019</td>
+<td style="text-align: right;">6.207591</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2020</td>
+<td style="text-align: right;">7.242629</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2021</td>
+<td style="text-align: right;">1.228390</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2022</td>
+<td style="text-align: right;">0.376581</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2023</td>
+<td style="text-align: right;">9.643905</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2024</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Graph of DHW by year of the experiment</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>dhwgraph<span class="ot">&lt;-</span><span class="fu">ggplot</span>(dhw, <span class="fu">aes</span>(<span class="at">x=</span>date, <span class="at">y=</span>dhw, <span class="at">color=</span>site))<span class="sc">+</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">size=</span><span class="fl">0.5</span>)<span class="sc">+</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()<span class="sc">+</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values=</span><span class="fu">c</span>(<span class="st">'firebrick'</span>,<span class="st">'dodgerblue3'</span>))<span class="sc">+</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">date_breaks =</span> <span class="st">"3 months"</span>)<span class="sc">+</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x=</span><span class="fu">element_text</span>(<span class="at">angle=</span><span class="dv">90</span>), <span class="at">text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>))<span class="sc">+</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>site, <span class="at">ncol=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept=</span><span class="dv">4</span>, <span class="at">linetype=</span><span class="st">'dotdash'</span>, <span class="at">color=</span><span class="st">'black'</span>)<span class="sc">+</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept=</span><span class="dv">8</span>, <span class="at">linetype=</span><span class="st">'dashed'</span>, <span class="at">color=</span><span class="st">'red'</span>)<span class="sc">+</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="cn">NULL</span>, <span class="at">y=</span><span class="st">'Degree Heating Weeks'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>dhwgraph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 83 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="heatwaver-mhw-and-climatology-calcs" class="level1">
+<h1>heatwaveR MHW and climatology calcs</h1>
+<section id="part-1-climatologies" class="level2">
+<h2 class="anchored" data-anchor-id="part-1-climatologies">Part 1: Climatologies</h2>
+<p>-data should include 2 columns (datetime (t) and temp (temp)) -one site at a time for this<br>
+</p>
+<p>-Starting with the satellite data!<br>
+</p>
+<section id="reshape-the-data-as-required" class="level3">
+<h3 class="anchored" data-anchor-id="reshape-the-data-as-required">reshape the data as required</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="do">### SATELLITE</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(false_MURSST)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 8
+  time                latitude longitude analysed_sst analysis_error sst_anomaly
+  &lt;dttm&gt;                 &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;       &lt;dbl&gt;
+1 2002-09-02 09:00:00     16.4     -88.4         29.4           0.39      -0.5  
+2 2002-09-03 09:00:00     16.4     -88.4         29.4           0.39      -0.518
+3 2002-09-04 09:00:00     16.4     -88.4         29.4           0.39      -0.439
+4 2002-09-05 09:00:00     16.4     -88.4         29.8           0.4       -0.025
+5 2002-09-06 09:00:00     16.4     -88.4         29.9           0.39      -0.109
+6 2002-09-07 09:00:00     16.4     -88.4         30.1           0.39       0.088
+# ℹ 2 more variables: date &lt;dttm&gt;, site &lt;chr&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(silk_MURSST)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 8
+  time                latitude longitude analysed_sst analysis_error sst_anomaly
+  &lt;dttm&gt;                 &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;       &lt;dbl&gt;
+1 2002-09-02 09:00:00     16.4     -88.1         29.4           0.38      -0.377
+2 2002-09-03 09:00:00     16.4     -88.1         29.5           0.37      -0.179
+3 2002-09-04 09:00:00     16.4     -88.1         29.6           0.37      -0.027
+4 2002-09-05 09:00:00     16.4     -88.1         29.8           0.38       0.038
+5 2002-09-06 09:00:00     16.4     -88.1         29.8           0.37       0.011
+6 2002-09-07 09:00:00     16.4     -88.1         29.9           0.37       0.046
+# ℹ 2 more variables: date &lt;dttm&gt;, site &lt;chr&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>false_clim<span class="ot">&lt;-</span> false_MURSST[<span class="sc">-</span><span class="dv">1</span>,] <span class="sc">%&gt;%</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">as.Date</span>(date)) <span class="sc">%&gt;%</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">temp=</span><span class="fu">as.numeric</span>(analysed_sst)) <span class="sc">%&gt;%</span></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, temp)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>false_clim</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7,723 × 2
+   date        temp
+   &lt;date&gt;     &lt;dbl&gt;
+ 1 2002-09-03  29.4
+ 2 2002-09-04  29.4
+ 3 2002-09-05  29.8
+ 4 2002-09-06  29.9
+ 5 2002-09-07  30.1
+ 6 2002-09-08  30.4
+ 7 2002-09-09  30.5
+ 8 2002-09-10  30.4
+ 9 2002-09-11  30.2
+10 2002-09-12  29.9
+# ℹ 7,713 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>silk_clim<span class="ot">&lt;-</span>silk_MURSST <span class="sc">%&gt;%</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">as.Date</span>(date)) <span class="sc">%&gt;%</span></span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">temp=</span>analysed_sst) <span class="sc">%&gt;%</span></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, temp)</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>silk_clim</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7,724 × 2
+   date        temp
+   &lt;date&gt;     &lt;dbl&gt;
+ 1 2002-09-02  29.4
+ 2 2002-09-03  29.5
+ 3 2002-09-04  29.6
+ 4 2002-09-05  29.8
+ 5 2002-09-06  29.8
+ 6 2002-09-07  29.9
+ 7 2002-09-08  30.0
+ 8 2002-09-09  29.8
+ 9 2002-09-10  29.5
+10 2002-09-11  29.7
+# ℹ 7,714 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="do">###IN SITU</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(falseday)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 6
+# Groups:   site [1]
+  site       day        meandailytemp    sd     n     se
+  &lt;chr&gt;      &lt;date&gt;             &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;
+1 False Caye 2018-12-05          28.8 0.374    19 0.0858
+2 False Caye 2018-12-06          28.6 0.284    24 0.0580
+3 False Caye 2018-12-07          28.5 0.345    24 0.0704
+4 False Caye 2018-12-08          28.5 0.440    24 0.0897
+5 False Caye 2018-12-09          28.6 0.447    24 0.0913
+6 False Caye 2018-12-10          28.3 0.179    24 0.0366</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(silkday)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 6
+# Groups:   site [1]
+  site      day        meandailytemp    sd     n     se
+  &lt;chr&gt;     &lt;date&gt;             &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;
+1 Silk Caye 2015-04-18          29.3 0.591     6 0.241 
+2 Silk Caye 2015-04-19          29.0 0.580    24 0.118 
+3 Silk Caye 2015-04-20          29.1 0.567    24 0.116 
+4 Silk Caye 2015-04-21          29.3 0.580    24 0.118 
+5 Silk Caye 2015-04-22          29.5 0.489    24 0.0999
+6 Silk Caye 2015-04-23          29.5 0.565    24 0.115 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>false_isclim<span class="ot">&lt;-</span> falseday[,<span class="sc">-</span><span class="dv">1</span>] <span class="sc">%&gt;%</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">as.Date</span>(day)) <span class="sc">%&gt;%</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">temp=</span>meandailytemp) <span class="sc">%&gt;%</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, temp)</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>false_isclim</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1,942 × 2
+   date        temp
+   &lt;date&gt;     &lt;dbl&gt;
+ 1 2018-12-05  28.8
+ 2 2018-12-06  28.6
+ 3 2018-12-07  28.5
+ 4 2018-12-08  28.5
+ 5 2018-12-09  28.6
+ 6 2018-12-10  28.3
+ 7 2018-12-11  27.6
+ 8 2018-12-12  27.1
+ 9 2018-12-13  27.5
+10 2018-12-14  27.8
+# ℹ 1,932 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>silk_isclim<span class="ot">&lt;-</span> silkday[,<span class="sc">-</span><span class="dv">1</span>] <span class="sc">%&gt;%</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date=</span><span class="fu">as.Date</span>(day)) <span class="sc">%&gt;%</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">temp=</span>meandailytemp) <span class="sc">%&gt;%</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, temp)</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>silk_isclim</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3,203 × 2
+   date        temp
+   &lt;date&gt;     &lt;dbl&gt;
+ 1 2015-04-18  29.3
+ 2 2015-04-19  29.0
+ 3 2015-04-20  29.1
+ 4 2015-04-21  29.3
+ 5 2015-04-22  29.5
+ 6 2015-04-23  29.5
+ 7 2015-04-24  29.4
+ 8 2015-04-25  29.4
+ 9 2015-04-26  29.5
+10 2015-04-27  29.6
+# ℹ 3,193 more rows</code></pre>
+</div>
+</div>
+</section>
+<section id="build-climatolgies" class="level3">
+<h3 class="anchored" data-anchor-id="build-climatolgies">Build climatolgies</h3>
+<p>With sat data (2002-present) the climatology is 20+ years!&nbsp; -In-situ data are limited to only last 5 years (more for Silk)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co">#use the ts2clm function</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>tssilk<span class="ot">&lt;-</span><span class="fu">ts2clm</span>(silk_clim, <span class="at">x=</span>date, <span class="at">y=</span>temp, <span class="at">climatologyPeriod =</span> <span class="fu">c</span>(<span class="st">"2002-09-02"</span>, <span class="st">"2024-05-18"</span>),<span class="at">var=</span><span class="cn">TRUE</span>)</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>tssilk</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7,930 × 6
+     doy date        temp  seas thresh   var
+   &lt;int&gt; &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
+ 1   246 2002-09-02  29.4  29.8   30.4 0.475
+ 2   247 2002-09-03  29.5  29.8   30.4 0.476
+ 3   248 2002-09-04  29.6  29.9   30.4 0.477
+ 4   249 2002-09-05  29.8  29.9   30.5 0.478
+ 5   250 2002-09-06  29.8  29.9   30.5 0.480
+ 6   251 2002-09-07  29.9  29.9   30.5 0.482
+ 7   252 2002-09-08  30.0  29.9   30.5 0.485
+ 8   253 2002-09-09  29.8  29.9   30.5 0.487
+ 9   254 2002-09-10  29.5  29.9   30.5 0.488
+10   255 2002-09-11  29.7  29.9   30.5 0.490
+# ℹ 7,920 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>tsfalse<span class="ot">&lt;-</span><span class="fu">ts2clm</span>(false_clim, <span class="at">x=</span>date, <span class="at">y=</span>temp, <span class="at">climatologyPeriod =</span> <span class="fu">c</span>(<span class="st">"2018-12-05"</span>, <span class="st">"2024-05-18"</span>),<span class="at">var=</span><span class="cn">TRUE</span>)</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>tsfalse</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7,929 × 6
+     doy date        temp  seas thresh   var
+   &lt;int&gt; &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
+ 1   247 2002-09-03  29.4  30.2   30.6 0.348
+ 2   248 2002-09-04  29.4  30.2   30.6 0.346
+ 3   249 2002-09-05  29.8  30.2   30.6 0.345
+ 4   250 2002-09-06  29.9  30.2   30.6 0.346
+ 5   251 2002-09-07  30.1  30.2   30.6 0.347
+ 6   252 2002-09-08  30.4  30.2   30.6 0.350
+ 7   253 2002-09-09  30.5  30.2   30.6 0.354
+ 8   254 2002-09-10  30.4  30.2   30.6 0.358
+ 9   255 2002-09-11  30.2  30.2   30.6 0.362
+10   256 2002-09-12  29.9  30.2   30.6 0.367
+# ℹ 7,919 more rows</code></pre>
+</div>
+</div>
+<p>ts2clim returns the following columns:<br>
+-temp (as per original data)<br>
+-seas (daily climatological cycle in degree C)<br>
+-thresh (daily varying threshold (90th percentile is default) that is used in detect_event to ID a MHW)<br>
+-var: daily variance (default is var=FALSE, which does not report var)<br>
+<br>
+Graphs of the variables for each site<br>
+</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>silkclimgraph<span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data=</span>tssilk, <span class="fu">aes</span>(<span class="at">x=</span>date))<span class="sc">+</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(aes(y=temp),color='black', alpha=0.5, linetype='dashed')+</span></span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span>seas), <span class="at">color=</span><span class="st">'dodgerblue3'</span>)<span class="sc">+</span></span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span>thresh), <span class="at">color=</span><span class="st">'firebrick'</span>, <span class="at">size=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(aes(y=var), color='orange3')+</span></span>
+<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>silkclimgraph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>falseclimgraph<span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data=</span>tsfalse, <span class="fu">aes</span>(<span class="at">x=</span>date))<span class="sc">+</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(aes(y=temp),color='black', alpha=0.5, linetype='dashed')+</span></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span>seas), <span class="at">color=</span><span class="st">'dodgerblue3'</span>)<span class="sc">+</span></span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span>thresh), <span class="at">color=</span><span class="st">'firebrick'</span>, <span class="at">size=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(aes(y=var), color='orange3')+</span></span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>falseclimgraph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-20-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>falseclimgraph<span class="sc">+</span>silkclimgraph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-20-3.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="detect-mhw-using-detect_event" class="level3">
+<h3 class="anchored" data-anchor-id="detect-mhw-using-detect_event">detect MHW using detect_event</h3>
+<p>Note: It is preferred to use 30 year climatologies for this, we only have data form 2002-present!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="co">#S = FALSE tells the function we are in the northern hemisphere</span></span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>silk_event<span class="ot">&lt;-</span>heatwaveR<span class="sc">::</span><span class="fu">detect_event</span>(tssilk, <span class="at">x=</span>date, <span class="at">y=</span>temp, <span class="at">S=</span><span class="cn">FALSE</span>)</span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>silk_event</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$climatology
+# A tibble: 7,930 × 10
+     doy date        temp  seas thresh   var threshCriterion durationCriterion
+   &lt;int&gt; &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;lgl&gt;           &lt;lgl&gt;            
+ 1   246 2002-09-02  29.4  29.8   30.4 0.475 FALSE           FALSE            
+ 2   247 2002-09-03  29.5  29.8   30.4 0.476 FALSE           FALSE            
+ 3   248 2002-09-04  29.6  29.9   30.4 0.477 FALSE           FALSE            
+ 4   249 2002-09-05  29.8  29.9   30.5 0.478 FALSE           FALSE            
+ 5   250 2002-09-06  29.8  29.9   30.5 0.480 FALSE           FALSE            
+ 6   251 2002-09-07  29.9  29.9   30.5 0.482 FALSE           FALSE            
+ 7   252 2002-09-08  30.0  29.9   30.5 0.485 FALSE           FALSE            
+ 8   253 2002-09-09  29.8  29.9   30.5 0.487 FALSE           FALSE            
+ 9   254 2002-09-10  29.5  29.9   30.5 0.488 FALSE           FALSE            
+10   255 2002-09-11  29.7  29.9   30.5 0.490 FALSE           FALSE            
+# ℹ 7,920 more rows
+# ℹ 2 more variables: event &lt;lgl&gt;, event_no &lt;int&gt;
+
+$event
+# A tibble: 64 × 22
+   event_no index_start index_peak index_end duration date_start date_peak 
+      &lt;int&gt;       &lt;int&gt;      &lt;int&gt;     &lt;int&gt;    &lt;dbl&gt; &lt;date&gt;     &lt;date&gt;    
+ 1        1        1012       1014      1017        6 2005-06-09 2005-06-11
+ 2        2        1040       1042      1055       16 2005-07-07 2005-07-09
+ 3        3        1091       1096      1097        7 2005-08-27 2005-09-01
+ 4        4        1604       1606      1608        5 2007-01-22 2007-01-24
+ 5        5        1613       1617      1620        8 2007-01-31 2007-02-04
+ 6        6        1624       1627      1630        7 2007-02-11 2007-02-14
+ 7        7        1642       1644      1647        6 2007-03-01 2007-03-03
+ 8        8        1685       1687      1689        5 2007-04-13 2007-04-15
+ 9        9        2000       2004      2004        5 2008-02-22 2008-02-26
+10       10        2199       2201      2204        6 2008-09-08 2008-09-10
+# ℹ 54 more rows
+# ℹ 15 more variables: date_end &lt;date&gt;, intensity_mean &lt;dbl&gt;,
+#   intensity_max &lt;dbl&gt;, intensity_var &lt;dbl&gt;, intensity_cumulative &lt;dbl&gt;,
+#   intensity_mean_relThresh &lt;dbl&gt;, intensity_max_relThresh &lt;dbl&gt;,
+#   intensity_var_relThresh &lt;dbl&gt;, intensity_cumulative_relThresh &lt;dbl&gt;,
+#   intensity_mean_abs &lt;dbl&gt;, intensity_max_abs &lt;dbl&gt;, intensity_var_abs &lt;dbl&gt;,
+#   intensity_cumulative_abs &lt;dbl&gt;, rate_onset &lt;dbl&gt;, rate_decline &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>false_event<span class="ot">&lt;-</span>heatwaveR<span class="sc">::</span><span class="fu">detect_event</span>(tsfalse, <span class="at">x=</span>date, <span class="at">y=</span>temp, <span class="at">S=</span><span class="cn">FALSE</span>)</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>false_event</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$climatology
+# A tibble: 7,929 × 10
+     doy date        temp  seas thresh   var threshCriterion durationCriterion
+   &lt;int&gt; &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;lgl&gt;           &lt;lgl&gt;            
+ 1   247 2002-09-03  29.4  30.2   30.6 0.348 FALSE           FALSE            
+ 2   248 2002-09-04  29.4  30.2   30.6 0.346 FALSE           FALSE            
+ 3   249 2002-09-05  29.8  30.2   30.6 0.345 FALSE           FALSE            
+ 4   250 2002-09-06  29.9  30.2   30.6 0.346 FALSE           FALSE            
+ 5   251 2002-09-07  30.1  30.2   30.6 0.347 FALSE           FALSE            
+ 6   252 2002-09-08  30.4  30.2   30.6 0.350 FALSE           FALSE            
+ 7   253 2002-09-09  30.5  30.2   30.6 0.354 FALSE           FALSE            
+ 8   254 2002-09-10  30.4  30.2   30.6 0.358 FALSE           FALSE            
+ 9   255 2002-09-11  30.2  30.2   30.6 0.362 FALSE           FALSE            
+10   256 2002-09-12  29.9  30.2   30.6 0.367 FALSE           FALSE            
+# ℹ 7,919 more rows
+# ℹ 2 more variables: event &lt;lgl&gt;, event_no &lt;int&gt;
+
+$event
+# A tibble: 39 × 22
+   event_no index_start index_peak index_end duration date_start date_peak 
+      &lt;int&gt;       &lt;int&gt;      &lt;int&gt;     &lt;int&gt;    &lt;dbl&gt; &lt;date&gt;     &lt;date&gt;    
+ 1        1        1011       1013      1015        5 2005-06-09 2005-06-11
+ 2        2        1039       1043      1055       17 2005-07-07 2005-07-11
+ 3        3        1091       1095      1096        6 2005-08-28 2005-09-01
+ 4        4        1613       1616      1617        5 2007-02-01 2007-02-04
+ 5        5        2199       2202      2205        7 2008-09-09 2008-09-12
+ 6        6        2491       2492      2495        5 2009-06-28 2009-06-29
+ 7        7        2567       2569      2573        7 2009-09-12 2009-09-14
+ 8        8        2655       2658      2662        8 2009-12-09 2009-12-12
+ 9        9        2796       2796      2807       12 2010-04-29 2010-04-29
+10       10        2857       2858      2861        5 2010-06-29 2010-06-30
+# ℹ 29 more rows
+# ℹ 15 more variables: date_end &lt;date&gt;, intensity_mean &lt;dbl&gt;,
+#   intensity_max &lt;dbl&gt;, intensity_var &lt;dbl&gt;, intensity_cumulative &lt;dbl&gt;,
+#   intensity_mean_relThresh &lt;dbl&gt;, intensity_max_relThresh &lt;dbl&gt;,
+#   intensity_var_relThresh &lt;dbl&gt;, intensity_cumulative_relThresh &lt;dbl&gt;,
+#   intensity_mean_abs &lt;dbl&gt;, intensity_max_abs &lt;dbl&gt;, intensity_var_abs &lt;dbl&gt;,
+#   intensity_cumulative_abs &lt;dbl&gt;, rate_onset &lt;dbl&gt;, rate_decline &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co">#MHW categories</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>silkcat<span class="ot">&lt;-</span><span class="fu">category</span>(silk_event, <span class="at">season=</span><span class="st">"range"</span>, <span class="at">S=</span><span class="cn">FALSE</span>)</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>falsecat<span class="ot">&lt;-</span><span class="fu">category</span>(false_event, <span class="at">season=</span><span class="st">"range"</span>, <span class="at">S=</span><span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>detect_event() returns the following:<br>
+-event_no: sequential number inficating ID and order of events<br>
+-index_start: start index of event -index end: end index of event<br>
+-duration: duration of event in days<br>
+-start, peak, and end date of events -intensity mean, max, and var (this is standard deviation): intensity is temp-seas. -intensity_cumulative = deg C * days<br>
+-Many more vars defined <a href="https://robwschlegel.github.io/heatwaveR/reference/detect_event.html">here</a><br>
+-category (I, II, III, IV– associated with moderate, strong, severe, extreme) and associated vars including % of time spent at each category level<br>
+<br>
+<br>
+</p>
+</section>
+<section id="calculate-exceedance-of-mmmt-from-previous-calculations-30.33-at-silk-30.36-at-false" class="level3">
+<h3 class="anchored" data-anchor-id="calculate-exceedance-of-mmmt-from-previous-calculations-30.33-at-silk-30.36-at-false">calculate exceedance of MMMT from previous calculations (30.33 at Silk, 30.36 at False)</h3>
+<p>Exceedance using SST</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>silk_exc<span class="ot">&lt;-</span> <span class="fu">exceedance</span>(silk_clim, <span class="at">x=</span>date, <span class="at">y=</span>temp,<span class="at">threshold=</span><span class="fl">30.33</span>)</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>silk_exc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$threshold
+# A tibble: 7,930 × 7
+   date        temp thresh threshCriterion durationCriterion exceedance
+   &lt;date&gt;     &lt;dbl&gt;  &lt;dbl&gt; &lt;lgl&gt;           &lt;lgl&gt;             &lt;lgl&gt;     
+ 1 2002-09-02  29.4   30.3 FALSE           FALSE             FALSE     
+ 2 2002-09-03  29.5   30.3 FALSE           FALSE             FALSE     
+ 3 2002-09-04  29.6   30.3 FALSE           FALSE             FALSE     
+ 4 2002-09-05  29.8   30.3 FALSE           FALSE             FALSE     
+ 5 2002-09-06  29.8   30.3 FALSE           FALSE             FALSE     
+ 6 2002-09-07  29.9   30.3 FALSE           FALSE             FALSE     
+ 7 2002-09-08  30.0   30.3 FALSE           FALSE             FALSE     
+ 8 2002-09-09  29.8   30.3 FALSE           FALSE             FALSE     
+ 9 2002-09-10  29.5   30.3 FALSE           FALSE             FALSE     
+10 2002-09-11  29.7   30.3 FALSE           FALSE             FALSE     
+# ℹ 7,920 more rows
+# ℹ 1 more variable: exceedance_no &lt;int&gt;
+
+$exceedance
+# A tibble: 19 × 18
+   exceedance_no index_start index_peak index_end duration date_start date_peak 
+           &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;date&gt;     &lt;date&gt;    
+ 1             1        1041       1042      1045        5 2005-07-08 2005-07-09
+ 2             2        1091       1096      1097        7 2005-08-27 2005-09-01
+ 3             3        2199       2201      2206        8 2008-09-08 2008-09-10
+ 4             4        2565       2570      2574       10 2009-09-09 2009-09-14
+ 5             5        2858       2859      2862        5 2010-06-29 2010-06-30
+ 6             6        2925       2929      2930        6 2010-09-04 2010-09-08
+ 7             7        2938       2939      2943        6 2010-09-17 2010-09-18
+ 8             8        3288       3289      3294        7 2011-09-02 2011-09-03
+ 9             9        3667       3670      3671        5 2012-09-15 2012-09-18
+10            10        4040       4043      4044        5 2013-09-23 2013-09-26
+11            11        6206       6211      6213        8 2019-08-29 2019-09-03
+12            12        6230       6237      6240       11 2019-09-22 2019-09-29
+13            13        6257       6259      6261        5 2019-10-19 2019-10-21
+14            14        6567       6570      6574        8 2020-08-24 2020-08-27
+15            15        6593       6604      6608       16 2020-09-19 2020-09-30
+16            16        7585       7588      7593        9 2023-06-08 2023-06-11
+17            17        7672       7675      7676        5 2023-09-03 2023-09-06
+18            18        7683       7697      7697       15 2023-09-14 2023-09-28
+19            19        7705       7712      7717       13 2023-10-06 2023-10-13
+# ℹ 11 more variables: date_end &lt;date&gt;, intensity_mean &lt;dbl&gt;,
+#   intensity_max &lt;dbl&gt;, intensity_var &lt;dbl&gt;, intensity_cumulative &lt;dbl&gt;,
+#   intensity_mean_abs &lt;dbl&gt;, intensity_max_abs &lt;dbl&gt;, intensity_var_abs &lt;dbl&gt;,
+#   intensity_cum_abs &lt;dbl&gt;, rate_onset &lt;dbl&gt;, rate_decline &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>false_exc<span class="ot">&lt;-</span><span class="fu">exceedance</span>(false_clim, <span class="at">x=</span>date,<span class="at">y=</span>temp,<span class="at">threshold=</span><span class="fl">30.36</span>)</span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>false_exc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$threshold
+# A tibble: 7,929 × 7
+   date        temp thresh threshCriterion durationCriterion exceedance
+   &lt;date&gt;     &lt;dbl&gt;  &lt;dbl&gt; &lt;lgl&gt;           &lt;lgl&gt;             &lt;lgl&gt;     
+ 1 2002-09-03  29.4   30.4 FALSE           FALSE             FALSE     
+ 2 2002-09-04  29.4   30.4 FALSE           FALSE             FALSE     
+ 3 2002-09-05  29.8   30.4 FALSE           FALSE             FALSE     
+ 4 2002-09-06  29.9   30.4 FALSE           FALSE             FALSE     
+ 5 2002-09-07  30.1   30.4 FALSE           FALSE             FALSE     
+ 6 2002-09-08  30.4   30.4 TRUE            FALSE             FALSE     
+ 7 2002-09-09  30.5   30.4 TRUE            FALSE             FALSE     
+ 8 2002-09-10  30.4   30.4 TRUE            FALSE             FALSE     
+ 9 2002-09-11  30.2   30.4 FALSE           FALSE             FALSE     
+10 2002-09-12  29.9   30.4 FALSE           FALSE             FALSE     
+# ℹ 7,919 more rows
+# ℹ 1 more variable: exceedance_no &lt;int&gt;
+
+$exceedance
+# A tibble: 33 × 18
+   exceedance_no index_start index_peak index_end duration date_start date_peak 
+           &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;date&gt;     &lt;date&gt;    
+ 1             1        1011       1013      1015        5 2005-06-09 2005-06-11
+ 2             2        1040       1043      1045        6 2005-07-08 2005-07-11
+ 3             3        1089       1096      1100       12 2005-08-26 2005-09-02
+ 4             4        2199       2202      2205        7 2008-09-09 2008-09-12
+ 5             5        2563       2569      2574       12 2009-09-08 2009-09-14
+ 6             6        2832       2833      2836        5 2010-06-04 2010-06-05
+ 7             7        2857       2858      2861        5 2010-06-29 2010-06-30
+ 8             8        2925       2928      2931        7 2010-09-05 2010-09-08
+ 9             9        2936       2938      2943        8 2010-09-16 2010-09-18
+10            10        3265       3268      3270        6 2011-08-11 2011-08-14
+# ℹ 23 more rows
+# ℹ 11 more variables: date_end &lt;date&gt;, intensity_mean &lt;dbl&gt;,
+#   intensity_max &lt;dbl&gt;, intensity_var &lt;dbl&gt;, intensity_cumulative &lt;dbl&gt;,
+#   intensity_mean_abs &lt;dbl&gt;, intensity_max_abs &lt;dbl&gt;, intensity_var_abs &lt;dbl&gt;,
+#   intensity_cum_abs &lt;dbl&gt;, rate_onset &lt;dbl&gt;, rate_decline &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>false_exceedance<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data =</span> false_exc<span class="sc">$</span>threshold, <span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_flame</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">y2 =</span> thresh, <span class="at">fill =</span> <span class="st">"all"</span>), <span class="at">show.legend =</span> F) <span class="sc">+</span></span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">colour =</span> <span class="st">"temp"</span>)) <span class="sc">+</span></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> thresh, <span class="at">colour =</span> <span class="st">"thresh"</span>), <span class="at">size =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">name =</span> <span class="st">"Line Colour"</span>,</span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"temp"</span> <span class="ot">=</span> <span class="st">"black"</span>, <span class="st">"thresh"</span> <span class="ot">=</span>  <span class="st">"forestgreen"</span>)) <span class="sc">+</span></span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">name =</span> <span class="st">"Event Colour"</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"all"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>)) <span class="sc">+</span></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">fill =</span> <span class="cn">NA</span>))) <span class="sc">+</span></span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_labels =</span> <span class="st">"%b %Y"</span>, <span class="at">limits =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>,<span class="st">'2023-12-31'</span>))) <span class="sc">+</span></span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"False Caye DHW threshold (30.3°C) exceedance"</span>,<span class="at">y =</span> <span class="st">"Temperature (°C)"</span>, <span class="at">x =</span> <span class="cn">NULL</span>)<span class="sc">+</span></span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a>silk_exceedance<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data =</span> silk_exc<span class="sc">$</span>threshold, <span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_flame</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">y2 =</span> thresh, <span class="at">fill =</span> <span class="st">"all"</span>), <span class="at">show.legend =</span> F) <span class="sc">+</span></span>
+<span id="cb77-15"><a href="#cb77-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">color=</span><span class="st">'temp'</span>)) <span class="sc">+</span></span>
+<span id="cb77-16"><a href="#cb77-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> thresh, <span class="at">colour =</span> <span class="st">"thresh"</span>), <span class="at">size =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb77-17"><a href="#cb77-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">name =</span> <span class="st">"Line Colour"</span>,</span>
+<span id="cb77-18"><a href="#cb77-18" aria-hidden="true" tabindex="-1"></a>                      <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"temp"</span> <span class="ot">=</span> <span class="st">"black"</span>, <span class="st">"thresh"</span> <span class="ot">=</span>  <span class="st">"forestgreen"</span>)) <span class="sc">+</span></span>
+<span id="cb77-19"><a href="#cb77-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">name =</span> <span class="st">"Event Colour"</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"all"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>)) <span class="sc">+</span></span>
+<span id="cb77-20"><a href="#cb77-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">fill =</span> <span class="cn">NA</span>))) <span class="sc">+</span></span>
+<span id="cb77-21"><a href="#cb77-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_labels =</span> <span class="st">"%b %Y"</span>, <span class="at">limits =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>,<span class="st">'2023-12-31'</span>))) <span class="sc">+</span></span>
+<span id="cb77-22"><a href="#cb77-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span> <span class="st">"Silk Caye DHW threshold (30.3°C) exceedance"</span>, <span class="at">y =</span> <span class="st">"Temperature (°C)"</span>, <span class="at">x =</span> <span class="cn">NULL</span>)<span class="sc">+</span></span>
+<span id="cb77-23"><a href="#cb77-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb77-24"><a href="#cb77-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-25"><a href="#cb77-25" aria-hidden="true" tabindex="-1"></a>silk_exceedance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5711 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a>exc_graphs<span class="ot">&lt;-</span>false_exceedance<span class="sc">/</span>silk_exceedance<span class="sc">+</span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_layout</span>(<span class="at">guides=</span><span class="st">'collect'</span>)</span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>exc_graphs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5710 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5707 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 5707 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5711 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-22-2.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Exceedance using in-situ data</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>silk_is_exc<span class="ot">&lt;-</span> <span class="fu">exceedance</span>(silk_isclim, <span class="at">x=</span>date, <span class="at">y=</span>temp,<span class="at">threshold=</span><span class="fl">30.33</span>)</span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>silk_is_exc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$threshold
+# A tibble: 3,342 × 7
+   date        temp thresh threshCriterion durationCriterion exceedance
+   &lt;date&gt;     &lt;dbl&gt;  &lt;dbl&gt; &lt;lgl&gt;           &lt;lgl&gt;             &lt;lgl&gt;     
+ 1 2015-04-18  29.3   30.3 FALSE           FALSE             FALSE     
+ 2 2015-04-19  29.0   30.3 FALSE           FALSE             FALSE     
+ 3 2015-04-20  29.1   30.3 FALSE           FALSE             FALSE     
+ 4 2015-04-21  29.3   30.3 FALSE           FALSE             FALSE     
+ 5 2015-04-22  29.5   30.3 FALSE           FALSE             FALSE     
+ 6 2015-04-23  29.5   30.3 FALSE           FALSE             FALSE     
+ 7 2015-04-24  29.4   30.3 FALSE           FALSE             FALSE     
+ 8 2015-04-25  29.4   30.3 FALSE           FALSE             FALSE     
+ 9 2015-04-26  29.5   30.3 FALSE           FALSE             FALSE     
+10 2015-04-27  29.6   30.3 FALSE           FALSE             FALSE     
+# ℹ 3,332 more rows
+# ℹ 1 more variable: exceedance_no &lt;int&gt;
+
+$exceedance
+# A tibble: 23 × 18
+   exceedance_no index_start index_peak index_end duration date_start date_peak 
+           &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;date&gt;     &lt;date&gt;    
+ 1             1         130        132       141       12 2015-08-25 2015-08-27
+ 2             2         149        155       156        8 2015-09-13 2015-09-19
+ 3             3         167        175       179       13 2015-10-01 2015-10-09
+ 4             4         194        198       199        6 2015-10-28 2015-11-01
+ 5             5         410        420       421       12 2016-05-31 2016-06-10
+ 6             6         501        505       507        7 2016-08-30 2016-09-03
+ 7             7         513        515       519        7 2016-09-11 2016-09-13
+ 8             8         537        540       542        6 2016-10-05 2016-10-08
+ 9             9         860        866       869       10 2017-08-24 2017-08-30
+10            10         873        896       900       28 2017-09-06 2017-09-29
+# ℹ 13 more rows
+# ℹ 11 more variables: date_end &lt;date&gt;, intensity_mean &lt;dbl&gt;,
+#   intensity_max &lt;dbl&gt;, intensity_var &lt;dbl&gt;, intensity_cumulative &lt;dbl&gt;,
+#   intensity_mean_abs &lt;dbl&gt;, intensity_max_abs &lt;dbl&gt;, intensity_var_abs &lt;dbl&gt;,
+#   intensity_cum_abs &lt;dbl&gt;, rate_onset &lt;dbl&gt;, rate_decline &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>false_is_exc<span class="ot">&lt;-</span><span class="fu">exceedance</span>(false_isclim, <span class="at">x=</span>date,<span class="at">y=</span>temp,<span class="at">threshold=</span><span class="fl">30.36</span>)</span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>false_is_exc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$threshold
+# A tibble: 1,942 × 7
+   date        temp thresh threshCriterion durationCriterion exceedance
+   &lt;date&gt;     &lt;dbl&gt;  &lt;dbl&gt; &lt;lgl&gt;           &lt;lgl&gt;             &lt;lgl&gt;     
+ 1 2018-12-05  28.8   30.4 FALSE           FALSE             FALSE     
+ 2 2018-12-06  28.6   30.4 FALSE           FALSE             FALSE     
+ 3 2018-12-07  28.5   30.4 FALSE           FALSE             FALSE     
+ 4 2018-12-08  28.5   30.4 FALSE           FALSE             FALSE     
+ 5 2018-12-09  28.6   30.4 FALSE           FALSE             FALSE     
+ 6 2018-12-10  28.3   30.4 FALSE           FALSE             FALSE     
+ 7 2018-12-11  27.6   30.4 FALSE           FALSE             FALSE     
+ 8 2018-12-12  27.1   30.4 FALSE           FALSE             FALSE     
+ 9 2018-12-13  27.5   30.4 FALSE           FALSE             FALSE     
+10 2018-12-14  27.8   30.4 FALSE           FALSE             FALSE     
+# ℹ 1,932 more rows
+# ℹ 1 more variable: exceedance_no &lt;int&gt;
+
+$exceedance
+# A tibble: 20 × 18
+   exceedance_no index_start index_peak index_end duration date_start date_peak 
+           &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;date&gt;     &lt;date&gt;    
+ 1             1         159        164       169       11 2019-05-12 2019-05-17
+ 2             2         176        188       203       28 2019-05-29 2019-06-10
+ 3             3         219        221       223        5 2019-07-11 2019-07-13
+ 4             4         240        274       323       84 2019-08-01 2019-09-04
+ 5             5         503        508       510        8 2020-04-20 2020-04-25
+ 6             6         525        553       560       36 2020-05-12 2020-06-09
+ 7             7         583        584       587        5 2020-07-09 2020-07-10
+ 8             8         592        597       614       23 2020-07-18 2020-07-23
+ 9             9         625        663       672       48 2020-08-20 2020-09-27
+10            10         913        917       918        6 2021-06-04 2021-06-08
+11            11         923        931       949       27 2021-06-14 2021-06-22
+12            12         964        966       969        6 2021-07-25 2021-07-27
+13            13         982        988      1007       26 2021-08-12 2021-08-18
+14            14        1014       1018      1050       37 2021-09-13 2021-09-17
+15            15        1251       1264      1265       15 2022-05-08 2022-05-21
+16            16        1280       1282      1284        5 2022-06-06 2022-06-08
+17            17        1357       1359      1362        6 2022-08-22 2022-08-24
+18            18        1372       1374      1382       11 2022-09-06 2022-09-08
+19            19        1626       1651      1690       65 2023-05-18 2023-06-12
+20            20        1696       1774      1780       85 2023-07-27 2023-10-13
+# ℹ 11 more variables: date_end &lt;date&gt;, intensity_mean &lt;dbl&gt;,
+#   intensity_max &lt;dbl&gt;, intensity_var &lt;dbl&gt;, intensity_cumulative &lt;dbl&gt;,
+#   intensity_mean_abs &lt;dbl&gt;, intensity_max_abs &lt;dbl&gt;, intensity_var_abs &lt;dbl&gt;,
+#   intensity_cum_abs &lt;dbl&gt;, rate_onset &lt;dbl&gt;, rate_decline &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>false_is_exceedance<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data =</span> false_is_exc<span class="sc">$</span>threshold, <span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_flame</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">y2 =</span> thresh, <span class="at">fill =</span> <span class="st">"all"</span>), <span class="at">show.legend =</span> F) <span class="sc">+</span></span>
+<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">colour =</span> <span class="st">"temp"</span>)) <span class="sc">+</span></span>
+<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> thresh, <span class="at">colour =</span> <span class="st">"thresh"</span>), <span class="at">size =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb89-5"><a href="#cb89-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">name =</span> <span class="st">"Line Colour"</span>,</span>
+<span id="cb89-6"><a href="#cb89-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"temp"</span> <span class="ot">=</span> <span class="st">"black"</span>, <span class="st">"thresh"</span> <span class="ot">=</span>  <span class="st">"forestgreen"</span>)) <span class="sc">+</span></span>
+<span id="cb89-7"><a href="#cb89-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">name =</span> <span class="st">"Event Colour"</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"all"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>)) <span class="sc">+</span></span>
+<span id="cb89-8"><a href="#cb89-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">fill =</span> <span class="cn">NA</span>))) <span class="sc">+</span></span>
+<span id="cb89-9"><a href="#cb89-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_labels =</span> <span class="st">"%b %Y"</span>, <span class="at">limits =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>,<span class="st">'2023-12-31'</span>))) <span class="sc">+</span></span>
+<span id="cb89-10"><a href="#cb89-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"False Caye DHW threshold (30.3°C) exceedance, in-situ temperature"</span>,<span class="at">y =</span> <span class="st">"Temperature (°C)"</span>, <span class="at">x =</span> <span class="cn">NULL</span>)<span class="sc">+</span></span>
+<span id="cb89-11"><a href="#cb89-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb89-12"><a href="#cb89-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb89-13"><a href="#cb89-13" aria-hidden="true" tabindex="-1"></a>silk_is_exceedance<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data =</span> silk_is_exc<span class="sc">$</span>threshold, <span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb89-14"><a href="#cb89-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_flame</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">y2 =</span> thresh, <span class="at">fill =</span> <span class="st">"all"</span>), <span class="at">show.legend =</span> F) <span class="sc">+</span></span>
+<span id="cb89-15"><a href="#cb89-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">color=</span><span class="st">'temp'</span>)) <span class="sc">+</span></span>
+<span id="cb89-16"><a href="#cb89-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> thresh, <span class="at">colour =</span> <span class="st">"thresh"</span>), <span class="at">size =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb89-17"><a href="#cb89-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">name =</span> <span class="st">"Line Colour"</span>,</span>
+<span id="cb89-18"><a href="#cb89-18" aria-hidden="true" tabindex="-1"></a>                      <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"temp"</span> <span class="ot">=</span> <span class="st">"black"</span>, <span class="st">"thresh"</span> <span class="ot">=</span>  <span class="st">"forestgreen"</span>)) <span class="sc">+</span></span>
+<span id="cb89-19"><a href="#cb89-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">name =</span> <span class="st">"Event Colour"</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"all"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>)) <span class="sc">+</span></span>
+<span id="cb89-20"><a href="#cb89-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">fill =</span> <span class="cn">NA</span>))) <span class="sc">+</span></span>
+<span id="cb89-21"><a href="#cb89-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_labels =</span> <span class="st">"%b %Y"</span>, <span class="at">limits =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>,<span class="st">'2023-12-31'</span>))) <span class="sc">+</span></span>
+<span id="cb89-22"><a href="#cb89-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span> <span class="st">"Silk Caye DHW threshold (30.3°C) exceedance, in-situ temperature"</span>, <span class="at">y =</span> <span class="st">"Temperature (°C)"</span>, <span class="at">x =</span> <span class="cn">NULL</span>)<span class="sc">+</span></span>
+<span id="cb89-23"><a href="#cb89-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb89-24"><a href="#cb89-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb89-25"><a href="#cb89-25" aria-hidden="true" tabindex="-1"></a>silk_is_exceedance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1259 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1120 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 1120 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>is_exc_graphs<span class="ot">&lt;-</span>false_is_exceedance<span class="sc">/</span>silk_is_exceedance<span class="sc">+</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_layout</span>(<span class="at">guides=</span><span class="st">'collect'</span>)</span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>is_exc_graphs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 89 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 89 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 89 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1259 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1120 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 1120 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-23-2.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="joinging-the-two-mhw-datasets-false-and-silk" class="level3">
+<h3 class="anchored" data-anchor-id="joinging-the-two-mhw-datasets-false-and-silk">joinging the two MHW datasets (false and silk)</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>silk_event<span class="sc">$</span>climatology<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'Silk Caye'</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>silk_event<span class="sc">$</span>event<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'Silk Caye'</span></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>false_event<span class="sc">$</span>climatology<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'False Caye'</span></span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>false_event<span class="sc">$</span>event<span class="sc">$</span>site<span class="ot">&lt;-</span><span class="st">'False Caye'</span></span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a><span class="co">#rbind each df</span></span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>satclim<span class="ot">&lt;-</span><span class="fu">rbind</span>(silk_event<span class="sc">$</span>climatology, false_event<span class="sc">$</span>climatology)</span>
+<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a>satevent<span class="ot">&lt;-</span><span class="fu">rbind</span>(silk_event<span class="sc">$</span>event, false_event<span class="sc">$</span>event)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="some-visualizations" class="level2">
+<h2 class="anchored" data-anchor-id="some-visualizations">Some visualizations</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="co">#lollipops</span></span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(satevent, <span class="fu">aes</span>(<span class="at">x =</span> date_start, <span class="at">y =</span> intensity_max)) <span class="sc">+</span></span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_lolli</span>(<span class="at">colour =</span> <span class="st">"firebrick"</span>, <span class="at">colour_n =</span> <span class="st">"red"</span>, <span class="at">n =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"Max. intensity ["</span>, degree, <span class="st">"C]"</span>)), <span class="at">x =</span> <span class="cn">NULL</span>)<span class="sc">+</span></span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()<span class="sc">+</span></span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>site, <span class="at">ncol=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_date</span>(<span class="at">date_labels =</span> <span class="st">"%b %Y"</span>, <span class="at">limits =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>,<span class="st">'2023-12-31'</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 59 rows containing missing values or values outside the scale range
+(`geom_lolli()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using the `size` aesthetic with geom_segment was deprecated in ggplot2 3.4.0.
+ℹ Please use the `linewidth` aesthetic instead.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>satclim<span class="sc">$</span>dhw_thresh <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(satclim<span class="sc">$</span>site<span class="sc">==</span><span class="st">'Silk Caye'</span>, <span class="fl">30.33</span>, <span class="fl">30.36</span>)</span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a><span class="co">#climatologies</span></span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>all_clim<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data =</span> satclim, <span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp), <span class="at">size=</span><span class="fl">0.1</span>, <span class="at">color=</span><span class="st">'darkgray'</span>) <span class="sc">+</span></span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> thresh), <span class="at">size =</span> <span class="fl">1.0</span>, <span class="at">alpha=</span><span class="fl">0.5</span>, <span class="at">color=</span><span class="st">'black'</span>) <span class="sc">+</span></span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> seas), <span class="at">size =</span> <span class="fl">1.2</span>, <span class="at">alpha=</span><span class="fl">0.7</span>,<span class="at">color=</span><span class="st">'forestgreen'</span>) <span class="sc">+</span></span>
+<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_flame</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">y2 =</span> thresh), <span class="at">color=</span><span class="st">'firebrick'</span>,<span class="at">fill=</span><span class="cn">NA</span>,<span class="at">size=</span><span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="fu">aes</span>(<span class="at">yintercept=</span>dhw_thresh), <span class="at">color=</span><span class="st">'black'</span>, <span class="at">linetype=</span><span class="st">'dashed'</span>)<span class="sc">+</span></span>
+<span id="cb101-10"><a href="#cb101-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()<span class="sc">+</span></span>
+<span id="cb101-11"><a href="#cb101-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"MHW Climatology"</span>)<span class="sc">+</span></span>
+<span id="cb101-12"><a href="#cb101-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>site, <span class="at">ncol=</span><span class="dv">1</span>)</span>
+<span id="cb101-13"><a href="#cb101-13" aria-hidden="true" tabindex="-1"></a>all_clim</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 412 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-25-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a><span class="co">#just exp time</span></span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>exp_clim<span class="ot">&lt;-</span><span class="fu">ggplot</span>(<span class="at">data =</span> satclim, <span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp), <span class="at">size=</span><span class="fl">0.1</span>, <span class="at">color=</span><span class="st">'darkgray'</span>) <span class="sc">+</span></span>
+<span id="cb103-4"><a href="#cb103-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> thresh), <span class="at">size =</span> <span class="fl">1.0</span>, <span class="at">alpha=</span><span class="fl">0.5</span>, <span class="at">color=</span><span class="st">'black'</span>) <span class="sc">+</span></span>
+<span id="cb103-5"><a href="#cb103-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> seas), <span class="at">size =</span> <span class="fl">1.2</span>, <span class="at">alpha=</span><span class="fl">0.7</span>,<span class="at">color=</span><span class="st">'forestgreen'</span>) <span class="sc">+</span></span>
+<span id="cb103-6"><a href="#cb103-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_flame</span>(<span class="fu">aes</span>(<span class="at">y =</span> temp, <span class="at">y2 =</span> thresh), <span class="at">color=</span><span class="st">'firebrick'</span>,<span class="at">fill=</span><span class="cn">NA</span>,<span class="at">size=</span><span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb103-7"><a href="#cb103-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="fu">aes</span>(<span class="at">yintercept=</span>dhw_thresh), <span class="at">color=</span><span class="st">'black'</span>, <span class="at">linetype=</span><span class="st">'dashed'</span>)<span class="sc">+</span></span>
+<span id="cb103-8"><a href="#cb103-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()<span class="sc">+</span></span>
+<span id="cb103-9"><a href="#cb103-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"MHW Climatology"</span>)<span class="sc">+</span></span>
+<span id="cb103-10"><a href="#cb103-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>site, <span class="at">ncol=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb103-11"><a href="#cb103-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_labels =</span> <span class="st">"%b %Y"</span>, <span class="at">limits =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">'2017-12-01'</span>,<span class="st">'2023-12-31'</span>)))</span>
+<span id="cb103-12"><a href="#cb103-12" aria-hidden="true" tabindex="-1"></a>exp_clim</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).
+Removed 5708 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 11421 rows containing missing values or values outside the scale range
+(`geom_flame()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-25-3.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="calling-some-useful-graphs" class="level2">
+<h2 class="anchored" data-anchor-id="calling-some-useful-graphs">calling some useful graphs</h2>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Satellite and in-situ temperature comparison</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">in-situ DHW</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">Satellite MHW</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false" href="">Exceedance Graphs (DHW threshold)</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>Satellite (MUR SST) temperature compared to in-situ temperature (HOBO Pro V2)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Difference between in-situ temperature (HOBO Pro V2) and SST (JPL MUR SST) over time</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<p>Table of Max DHW by year of experiment</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">site</th>
+<th style="text-align: right;">year</th>
+<th style="text-align: right;">dhwm</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2018</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2019</td>
+<td style="text-align: right;">11.256848</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2020</td>
+<td style="text-align: right;">18.358924</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2021</td>
+<td style="text-align: right;">9.566876</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2022</td>
+<td style="text-align: right;">4.597010</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2023</td>
+<td style="text-align: right;">24.806829</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">False Caye</td>
+<td style="text-align: right;">2024</td>
+<td style="text-align: right;">6.214305</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2017</td>
+<td style="text-align: right;">6.214305</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2018</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2019</td>
+<td style="text-align: right;">6.207591</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2020</td>
+<td style="text-align: right;">7.242629</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2021</td>
+<td style="text-align: right;">1.228390</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2022</td>
+<td style="text-align: right;">0.376581</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2023</td>
+<td style="text-align: right;">9.643905</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Silk Caye</td>
+<td style="text-align: right;">2024</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Graph of DHW by year of experiment</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>Climatology of entire SST dataset (2002-2024)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Climatology graph for experimental time (2018-2023)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+<p>Exceedance Graph for DHW threshold (30.3 degrees C) - satellite</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Exceedance Graph for DHW threshold (30.3 degrees C) - in-situ</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="temperature_data_processing_final_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
