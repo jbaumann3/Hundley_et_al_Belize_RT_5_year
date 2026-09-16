@@ -14,7 +14,7 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE, size = 'scriptsize')
 ```
 
-```{r wrap-hook, include = FALSE}
+```{r wrap-hook, eval=FALSE, include=FALSE}
 # Define a new code chunk option 'linewidth' for wrapping unruly R output
 hook_output = knitr::knit_hooks$get('output')
 knitr::knit_hooks$set(output = function(x, options) {
@@ -43,6 +43,13 @@ library(tidyr)
 library(dplyr)
 library(survminer)
 library(writexl)
+
+## Colleen added:
+library(performance)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+
 ```
 
 This **R markdown document** outlines the data sets and codes used to create all the figures and run statistics published in the paper. Data associated with all physiological metrics (everything besides mortality) recorded from T4 (the timeline associated with this paper) was compiled into the file `masterdata_colony.csv` alongside older time points for long-term storage. Therefore, some analysis sections will be calling upon this file/dataset. But for the physiological metrics that were assessed using lab-based analyses (i.e. Chlorophyll, Proteins, Carbohydrates, Lipids), the process of obtaining concentration values from plate-reading assays is also outlined in this code.    
@@ -57,11 +64,11 @@ We also used a RADseq pipeline in an attempt to identify corals that initially h
 #| eval: false 
 
 # navigate to directory with the data
-setwd("~/Field Data/PAM")
+#setwd("~/Raw_data/Field Data/PAM")
 
 #Load and format code
 
-FvFm_data_All_corals <- read_csv("~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Field Data/PAM/FvFm_All_corals.csv", 
+FvFm_data_All_corals <- read_csv("Raw_data/Field Data/PAM/FvFm_All_corals.csv", 
                             col_types = cols(Fo_1 = col_number(), 
                                              Fm_1 = col_number(), Fv_1 = col_number(), 
                                              FvFm1 = col_number(), Fo_2 = col_number(), 
@@ -69,7 +76,15 @@ FvFm_data_All_corals <- read_csv("~/Desktop/Desktop - Callie’s MacBook Pro/Und
                                              FvFm2 = col_number(), Fo_3 = col_number(), 
                                              Fm_3 = col_number(), Fv_3 = col_number(), 
                                              FvFm3 = col_number()))
-View(FvFm_data_All_corals)
+#FvFm_data_All_corals <- read_csv("~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Field Data/PAM/FvFm_All_corals.csv", 
+#                            col_types = cols(Fo_1 = col_number(), 
+#                                             Fm_1 = col_number(), Fv_1 = col_number(), 
+#                                             FvFm1 = col_number(), Fo_2 = col_number(), 
+#                                             Fm_2 = col_number(), Fv_2 = col_number(), 
+#                                             FvFm2 = col_number(), Fo_3 = col_number(), 
+#                                             Fm_3 = col_number(), Fv_3 = col_number(), 
+#                                             FvFm3 = col_number()))
+#View(FvFm_data_All_corals)
 
 # reassign treatment name via new naming scheme 
 FvFm_data_All_corals$treatment <-
@@ -95,7 +110,8 @@ FvFm_all_corals_no_NAs<- FvFm_all_corals_no_NAs %>%
 FvFm_all_corals_no_NAs<- FvFm_all_corals_no_NAs %>% 
   mutate(home_envir = ifelse(treatment == "NS Native" | treatment == "Transplant to OS", 
                              "Nearshore coral", "Offshore coral"))
-view(FvFm_all_corals_no_NAs)
+#View(FvFm_all_corals_no_NAs)
+
 
   #calculate an average FvFm value for each coral (one point/row for each coral)
 FvFm_all_coral_one_point_no_NAs <- FvFm_all_corals_no_NAs |> 
@@ -108,7 +124,7 @@ FvFm_all_coral_one_point_no_NAs <- FvFm_all_corals_no_NAs |>
 
 
 #Save raw data for records + statistical analysis 
-write_csv(FvFm_all_coral_one_point_no_NAs, file="~/Cleaned_data/FvFm_noNA_data.csv")
+write_csv(FvFm_all_coral_one_point_no_NAs, file="Cleaned_data/FvFm_noNA_data.csv")
 #write_xlsx(FvFm_all_coral_one_point_no_NAs, path="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/FvFm_noNA_data.xlsx")
 
 #=======Mean data (one point for each transplant treatment)=========
@@ -117,7 +133,7 @@ PAM_means_all_coral<-FvFm_all_coral_one_point_no_NAs %>%
   group_by(species, treatment) %>%
   drop_na(avg_FvFm) %>%
   summarize(meanFvFm=mean(avg_FvFm), sdFvFm=sd(avg_FvFm), n=n(), SEFvFm=(sdFvFm)/(sqrt(n)))
-view(PAM_means_all_coral)
+#View(PAM_means_all_coral)
 
   #removing nas
 PAM_means_no_NAs = subset(PAM_means_all_coral, treatment %in% c("NS Native","Transplant to NS", "OS Native", "Transplant to OS"))
@@ -134,22 +150,28 @@ PAM_means_no_NAs<- PAM_means_no_NAs %>%
 
 ```{r}
 #Graph plot of Fv/Fm by species and transplant treatment 
-pd = position_dodge(width = 0.3)
+pd = position_dodge(width = 0.2)
+pjd = position_jitterdodge(jitter.width = NULL, dodge.width = 0.2) #CBB: Updated this to jitter just to see points better
 
   # Trying and failing to make species a factor to change the order of my species in the legend
 #PAM_means_no_NAs$species_factor <- factor(PAM_means_no_NAs$species, levels = c("SSID", "PSTR"))
 #PAM_means_no_NAs$species_relevel <- relevel(PAM_means_no_NAs$species, ref = "SSID")
-levels(PAM_means_no_NAs$species_factor) #returns: "SSID" "PSTR" 
+#levels(PAM_means_no_NAs$species) #returns: "SSID" "PSTR" 
+
+## CBB edit: what you were trying above:
+PAM_means_no_NAs$species <- factor(PAM_means_no_NAs$species, levels = c("SSID","PSTR"))
+FvFm_all_coral_one_point_no_NAs$species <- factor(FvFm_all_coral_one_point_no_NAs$species, levels = c("SSID","PSTR"))
+levels(PAM_means_no_NAs$species) # just lets you check the levels
 
 #PAM_means_no_NAs |> 
   #mutate(species = factor(), levels = c('S. siderea', 'P. strigosa')) |> 
 
-PAM_Fig <- ggplot(data = PAM_means_no_NAs, aes(x= factor(treatment, levels = c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanFvFm, color = species)) +
+PAM_Fig <- ggplot(data = PAM_means_no_NAs %>% drop_na(), aes(x= factor(treatment, levels = c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanFvFm, color = species, group=species)) +
   geom_point(size=3, position=pd) +
-  geom_point(data = FvFm_all_coral_one_point_no_NAs, aes(x=treatment, y=avg_FvFm), position=pd, size=2.5, alpha=0.3) +
-  geom_line(aes(group=species), position=pd) +
+  geom_point(data = FvFm_all_coral_one_point_no_NAs, aes(x=treatment, y=avg_FvFm), position=pjd, size=2.5, alpha=0.3) +
+  geom_line(position=pd) +
   geom_errorbar(aes(x=treatment, ymin=meanFvFm-SEFvFm, ymax=meanFvFm+SEFvFm), 
-                width=0.2, size=1, position=pd) +
+                width=0.2, linewidth=1, position=pd) +
   facet_wrap(~home_envir, scales='free_x') + #THIS LINE ISN'T WORKING
   theme_bw() + 
   theme(
@@ -161,10 +183,10 @@ PAM_Fig <- ggplot(data = PAM_means_no_NAs, aes(x= factor(treatment, levels = c('
   guides(color = guide_legend(title = "Species")) + 
   xlab("Treatment") +
   ylab("Fv/Fm values") +
-  scale_color_manual(values = c("#384B6B", "#E18A2A"), labels=c('P. strigosa', 'S. siderea')) 
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c('S. siderea', 'P. strigosa')) 
 
 # export graph as .jpg
-ggsave("PAM_Fig_Sep_12_26.jpg", plot=PAM_Fig, path="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("PAM_Fig_Sep_12_26.jpg", plot=PAM_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 ```
 
 
@@ -174,9 +196,9 @@ ggsave("PAM_Fig_Sep_12_26.jpg", plot=PAM_Fig, path="~/Desktop/Desktop - Callie�
 #| eval: false
 
 #Load cleaned data 
-FvFm_data <- read_csv("~/Cleaned_data/FvFm_noNA_data.csv", 
+FvFm_data <- read_csv("Cleaned_data/FvFm_noNA_data.csv", 
                       col_types = cols(average_FvFm = col_number()))
-View(FvFm_data)
+#View(FvFm_data)
 
 #Test for normality
   # Using a Shapiro-wilk test, our null hypothesis is that the sample data is not significantly different from a normal distribution.
@@ -243,6 +265,129 @@ stats_FvFm <-FvFm_data %>%
 stats_FvFm
 ```
 
+```{r CBB stats run}
+
+# just renaming to make it shorter
+pam_df <- FvFm_all_coral_one_point_no_NAs %>% 
+  mutate(across(c(2:5, 8:9, 11:13), as.factor)) # convert several columns to factors
+
+
+# ------------- SSID-only PAM stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_pam <- subset(pam_df, species == "SSID")
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_pam, aes(x = avg_FvFm)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_pam, aes(sample = avg_FvFm)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_pam_lm <- lmer(avg_FvFm ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_pam)
+check_model(SSID_pam_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_pam_lm_trt <- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = SSID_pam)
+compare_performance(SSID_pam_lm, SSID_pam_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+SSID_pam_lm_simple <- lm(avg_FvFm ~ treatment, data = SSID_pam)
+AIC(SSID_pam_lm, SSID_pam_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_pam_lm_trt)
+anova(SSID_pam_lm_trt) 
+emmeans(SSID_pam_lm_trt, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID PAM model: SSID_pam_lm_trt <- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = SSID_pam)
+
+
+
+# ------------- PSTR-only PAM stats
+
+PSTR_pam_full <- subset(pam_df, species != "SSID")
+table(PSTR_pam_full$treatment) # only n=1 for 'Transplant to NS' so cutting that level
+
+PSTR_pam <- PSTR_pam_full %>% 
+  filter(treatment != "Transplant to NS") %>% # remove the treatment with n=1
+  filter(flag_ID != "37") %>% # remove sample with bad PAM (explain in methods)
+  droplevels()
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_pam, aes(x = avg_FvFm)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_pam, aes(sample = avg_FvFm)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_pam_lm <- lmer(avg_FvFm ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_pam)
+check_model(PSTR_pam_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_pam_lm_trt <- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = PSTR_pam)
+compare_performance(PSTR_pam_lm, PSTR_pam_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_pam_lm_simple <- lm(avg_FvFm ~ treatment, data = PSTR_pam)
+AIC(PSTR_pam_lm, PSTR_pam_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_pam_lm_trt)
+anova(PSTR_pam_lm_trt) 
+emmeans(PSTR_pam_lm_trt, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR PAM model: PSTR_pam_lm_trt <- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = PSTR_pam)
+
+
+# ------------ Followed this before subsetting data:
+##### Performed all the below with full PSTR sample and from that determined we needed to remove 2 samples:
+# the single Transplant to NS fragment
+# the bad PAM sample
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+#PSTR_pam_lm <- lmer(avg_FvFm ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_pam)
+# throw singular fit warnging...
+#check_singularity(PSTR_pam_lm) # yes, singular so moving forward with add not interactive model
+#PSTR_pam_lm <- lmer(avg_FvFm ~ transplant_envir + home_envir + (1 | colony_ID), data = PSTR_pam)
+# still throwing singular fit do dropping random effect and shifting to simple lm
+
+# PSTR_pam_lm <- lm((avg_FvFm) ~ transplant_envir * home_envir, data = PSTR_pam)
+# check_model(PSTR_pam_lm) # use this to visually check model performance/assumptions: looks meh
+# check_heteroscedasticity(PSTR_pam_lm) # OK: Error variance appears to be homoscedastic (p = 0.112).
+# check_outliers(PSTR_pam_lm) # no corals considered outliers
+# 
+# summary(PSTR_pam_lm)
+# anova(PSTR_pam_lm) 
+# 
+# ## Exploring difference between 2-way, 1-way, and additive: additive is best according to AIC so moving forward # with this one!
+# PSTR_pam_lm_add <- lm(log(avg_FvFm) ~ transplant_envir + home_envir, data = PSTR_pam)
+# PSTR_pam_lm_trt <- lm(log(avg_FvFm) ~ treatment, data = PSTR_pam)
+# compare_performance(PSTR_pam_lm, PSTR_pam_lm_add, PSTR_pam_lm_trt)
+# 
+# check_model(PSTR_pam_lm_add) # use this to visually check model performance/assumptions: looks better
+# shapiro.test(residuals(PSTR_pam_lm_add))
+# # residual normality
+# shapiro.test(residuals(PSTR_pam_lm_add)) 
+# # W = 0.68253, p-value = 1.629e-06 --> very non-normal so moving forward with removing bad PAM sample
+
+```
+
 
 # Chlorophyll concentrations
 
@@ -252,12 +397,12 @@ stats_FvFm
 #| eval: false
 #Load data and format code
 #Chlorophyll data
-chlorophyll_data <- read_csv("Lab Data/Chloropyll/chlorophyll_data.csv", 
+chlorophyll_data <- read_csv("Raw_data/Lab Data/Chloropyll/chlorophyll_data.csv", 
                              col_types = cols(absorbance = col_character(), 
                                               absorbance_reading = col_number()))
 chl_samples<-filter(chlorophyll_data, chl_source=='sample')
 #Volume of tissue slurry
-chl_starting_volume <- read_csv("Lab Data/Chloropyll/chl_starting_volume.csv", 
+chl_starting_volume <- read_csv("Raw_data/Lab Data/Chloropyll/chl_starting_volume.csv", 
                                 col_types = cols(total_symbiont_slurry_volume_ml = col_number()))
 final_chl<-merge(chl_samples, chl_starting_volume, by="sample_ID")
 
@@ -287,7 +432,7 @@ chl_abs_means$adjusted_abs_value<-(chl_abs_means$meanabsor - chl_abs_means$blank
 chl_abs_means_wider<-chl_abs_means %>%
   select(-c(meanabsor, sd, se)) %>%
   pivot_wider(names_from= absorbance, values_from = adjusted_abs_value)
-view(chl_abs_means_wider)
+#View(chl_abs_means_wider)
 
 #Okay time to get the calculations in!
 chl_abs_means_wider$chla_ugml<-((-3.4551*(chl_abs_means_wider$"632")) + (13.6849*(chl_abs_means_wider$"665")))
@@ -296,18 +441,18 @@ chl_abs_means_wider$chlc2_ugml<-((32.9371*(chl_abs_means_wider$"632")) - (7.0140
   #(3) accommodate volumes of total tissue slurry bc want a count of ALL chlorophyll in the sample -- divide everything by 0.3846 (dilution factor) and multiply by 5 (for total mls)
 chl_abs_means_wider$chla_ug<-(chl_abs_means_wider$chla_ugml * 5 / 0.3846)
 chl_abs_means_wider$chlc2_ug<-(chl_abs_means_wider$chlc2_ugml * 5 / 0.3846)
-view(chl_abs_means_wider)
+#View(chl_abs_means_wider)
 
 #Prepare data for graphing
 #=====Raw data======
-sa_measurements<-read_csv("~/Lab Data/backcalcs/sa_measurements.csv")
+sa_measurements<-read_csv("Raw_data/Lab Data/backcalcs/sa_measurements.csv")
 chl_sa_analysis<-merge(chl_abs_means_wider, sa_measurements, by="sample_ID")
 
 #back-calculate each chlorophyll concentration (a and c2) to ug/cm^2 and add coral treatments
 chl_sa_analysis$chla_ug_cm2<- chl_sa_analysis$chla_ug / chl_sa_analysis$sample_area_cm2
 chl_sa_analysis$chlc2_ug_cm2<- chl_sa_analysis$chlc2_ug / chl_sa_analysis$sample_area_cm2
 
-samples_treatments<-read_csv("~/Lab Data/backcalcs/samples_treatments.csv")
+samples_treatments<-read_csv("Raw_data/Lab Data/backcalcs/samples_treatments.csv")
 chl_ugcm2_treatments<-merge(chl_sa_analysis, samples_treatments, by="sample_ID") #RERUNING THIS LINE SHOULD ACCOUNT FOR TREATMENTS FOR SSIDF3 and SSIDF18 
 
   # Fix treatment naming convention
@@ -318,7 +463,7 @@ chl_ugcm2_treatments$treatment<-ifelse(chl_ugcm2_treatments$treatment == 'Native
   
 
   #save chl concentration data for records, graphing, and statistic
-write_csv(chl_ugcm2_treatments, file="~/Cleaned_data/chl_data.csv")
+write_csv(chl_ugcm2_treatments, file="Cleaned_data/chl_data.csv")
 #write_xlsx(chl_ugcm2_treatments, path="~/Cleaned_data/chl_data.xlsx")
 
 ```
@@ -375,7 +520,7 @@ chla_Fig <- ggplot(Chl_mean_plot_data, aes(x=treatment, y=meanchla, color=specie
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
   
 # export graph as .jpg
-ggsave("Chla_Fig_Sep_12_26.jpg", plot=chla_Fig, path="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Chla_Fig_Sep_12_26.jpg", plot=chla_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 
 #Graph plot of chlorophyll-c2 by species and transplant treatment
@@ -403,7 +548,7 @@ chlc2_Fig <- ggplot(Chl_mean_plot_data, aes(x=treatment, y=meanchlc2, color=spec
 ggsave("Chlc2_Fig_Sep_12_26.jpg", plot=chlc2_Fig, path="~/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data (w/out NA in transplant treatment) for statistical analysis 
-write_csv(chl_ugcm2_treatments_noNA, file="~/Cleaned_data/chl_noNA_data.csv")
+write_csv(chl_ugcm2_treatments_noNA, file="Cleaned_data/chl_noNA_data.csv")
 ```
 
 
@@ -412,7 +557,7 @@ write_csv(chl_ugcm2_treatments_noNA, file="~/Cleaned_data/chl_noNA_data.csv")
 ```{r}
 #| eval: false
 #Load data 
-chl_analysis_data <- read_csv("~/Cleaned_data/chl_noNA_data.csv", 
+chl_analysis_data <- read_csv("Cleaned_data/chl_noNA_data.csv", 
     col_types = cols(chla_ug_cm2 = col_number(), 
         chlc2_ug_cm2 = col_number()))
 
@@ -540,11 +685,11 @@ stats_chlc2
 ```{r}
 #| eval: false
 #Load and format code
-all_corals_and_TPs <- read_csv("Field Data/BW/all_corals_and_TPs.csv", 
+all_corals_and_TPs <- read_csv("Raw_data/Field Data/BW/all_corals_and_TPs.csv", 
                                col_types = cols(mortality = col_character(), 
                                                 bw = col_number(), bw_sd = col_number(), 
                                                 bw_se = col_number()))
-View(all_corals_and_TPs)
+#View(all_corals_and_TPs)
 all_corals_and_TPs <- all_corals_and_TPs[,-7]
 
   #adding differentiation of transplant treatment
@@ -561,7 +706,7 @@ BW_alive_TP_means<-alive_corals_and_TPs %>%
   group_by(species, treatment, timepoint) %>%
   drop_na(treatment) %>%
   summarize(meanBW=mean(bw), sdBW=sd(bw), n=n(), SEBW=(sdBW)/(sqrt(n)))
-view(BW_alive_TP_means)
+#View(BW_alive_TP_means)
 ```
 
 ## Figure creation
@@ -608,7 +753,7 @@ BW_timepointcomparison_means <-long_alive_corals %>%
   group_by(species, treatment, timepoint_comparison) %>%
   drop_na(percent_change_bw) %>%
   summarize(meanchange=mean(percent_change_bw), sdchange=sd(percent_change_bw), n=n(), SEchange=(sdchange)/(sqrt(n)))
-view(BW_timepointcomparison_means)
+#View(BW_timepointcomparison_means)
 
 #Graph plot of percent change in buoyant weight by species and transplant treatment 
 ggplot(data=BW_timepointcomparison_means,  
@@ -624,8 +769,9 @@ ggplot(data=BW_timepointcomparison_means,
   scale_color_manual(name = "Timepoint comparison", labels=c('T0 - T1', 'T0 - T2', 'T0 - T3', 'T0 - T4', 'T3 - T4'), values=c("#b22222", "#228b21", "#8b4500", "#1f8fff","#7a5eb2"))
   #ylim(0,11)+
 
-#Save raw data for statistical analysis 
-write_csv(long_alive_corals2, file="long_alive_corals")
+#Save raw data for statistical analysis --> CBB: I cut this since you can just reread it below rather than save it as its own csv
+#write_csv(long_alive_corals2, file="long_alive_corals")
+longcoral <- long_alive_corals2
 ```
 
 
@@ -666,7 +812,7 @@ BW_Change_Fig <- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatmen
   scale_color_manual(name = "Months:", labels=c('0 - 3', '0 - 9', '0 - 17', '0 - 60', '17 - 60'), values=c("#b22222", "#228b21", "#8b4500", "#1f8fff","#7a5eb2"))
 
 # export graph as .jpg 
-ggsave("BWChange_Fig_Sep_12_26.jpg", plot=BW_Change_Fig, path="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("BWChange_Fig_Sep_12_26.jpg", plot=BW_Change_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 ```
 
 
@@ -675,7 +821,7 @@ ggsave("BWChange_Fig_Sep_12_26.jpg", plot=BW_Change_Fig, path="~/Desktop/Desktop
 ```{r}
 #| eval: false
 #Load data 
-longcoral<-read_csv('long_alive_corals.csv')
+#longcoral<-read_csv('long_alive_corals.csv')
 longcoral$species<-ifelse(grepl("PSTR", longcoral$coral_ID), "PSTR", "SSID")
 
 #Test for normality
@@ -705,7 +851,7 @@ bw_results<-TukeyHSD(aovbw1)
 
 #export results to sort outside of R
 tidy_bw<-tidy(bw_results)
-view(tidy_bw)
+#View(tidy_bw)
 write.csv(tidy_bw, file = "bw_results.csv")
 
 #Summary statistics 
@@ -725,7 +871,7 @@ stats_bw <-longcoral %>%
 ```{r}
 #| eval: false
 #Load and format code
-sur <- read.csv("~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Field Data/Mortality/mort_RT.csv")
+sur <- read.csv("Raw_data/Field Data/Mortality/mort_RT.csv")
 sur<-subset(sur, mortality!='missing') #remove 2 frags that went missing (glue detached)
 
 sur$treatment <- ifelse(sur$collection_site == "False Caye" & sur$transplant_site == "False Caye", "NS Native",
@@ -796,7 +942,7 @@ library(survminer)
 
 #Import code
 sur <- read.csv("mort_RT.csv")
-view(sur)
+#View(sur)
 
 sur<-subset(sur, mortality!='missing') #remove 2 frags that went missing (glue detached)
 
@@ -809,7 +955,7 @@ sur$treatment <-
       ifelse(sur$collection_site == "False Caye" & sur$transplant_site == "Silk Cayes", "Transplant to OS",
       ifelse(sur$collection_site == "Silk Cayes" & sur$transplant_site == "Silk Cayes", "OS Native",
       ifelse(sur$collection_site == "Silk Cayes" & sur$transplant_site == "False Caye", "Transplant to NS", NA))))
-view(sur)
+#View(sur)
 
 # subset by species to perform analyses by species
 sur_pstr <- subset(sur, species == "PSTR")
@@ -819,7 +965,7 @@ sur_ssid <- subset(sur, species == "SSID")
 
 # Setting up data for graphing 
 ssid.r <- Surv(sur_ssid$tod, sur_ssid$mort) # creates a survival object for use in survfit() function below
-view(ssid.r)
+#View(ssid.r)
 ssid.out <- survfit(ssid.r ~ treatment, data = sur_ssid) # Computes an estimate of a survival curve based on transplant location using Kaplan-Meier; this will also be used for plotting
 ssid.out # view output to see mortality event and sample size summary stats
 
@@ -856,7 +1002,7 @@ legend("bottom", legend=c("p < 0.01"), bty = "n", cex = 2)
 
 # Setting up data 
 pstr.r <- Surv(sur_pstr$tod, sur_pstr$mort) # creates a survival object for use in survfit() function below
-view(pstr.r)
+#View(pstr.r)
 pstr.out <- survfit(pstr.r ~ treatment, data = sur_pstr) # Computes an estimate of a survival curve based on transplant location using Kaplan-Meier; this will also be used for plotting
 pstr.out # view output to see mortality event and sample size summary stats
 
@@ -940,7 +1086,7 @@ mortality_ssid <-sur_ssid %>%
 ```{r}
 #| eval: false
 #Load and format code
-compiled_protein_assay_data <- read_csv("~/Desktop/Honors Thesis/Lab Data/Proteins/compiled_protein_assay_data.csv", 
+compiled_protein_assay_data <- read_csv("Raw_data/Lab Data/Proteins/compiled_protein_assay_data.csv", 
                                         col_types = cols(plate_number = col_character(), 
                                                          column = col_character(), 
                                                          replicate = col_character(), 
@@ -993,7 +1139,7 @@ protein_samples$calc_conc_ug_ml<- protein_samples$m * protein_samples$absorbance
 
     # PROTEIN SAMPLE REDOS -- 5 of our samples either had 1 negative calculated protein concentration value from the above analysis or had all 3 replicates with negative values.  
 #After uploading, the same code was used above to check concnetration values for redos
-protein_redos_compiled_data <- read_csv("Lab Data/Proteins/protein_redos_compiled_data.csv", 
+protein_redos_compiled_data <- read_csv("Raw_data/Lab Data/Proteins/protein_redos_compiled_data.csv", 
                                         col_types = cols(plate_number = col_character(), 
                                                          column = col_character(), protein_source = col_character(), 
                                                          replicate = col_character(), absorbance_595 = col_number(), 
@@ -1031,12 +1177,12 @@ df_final_protein2<-rbind(df_final_protein, protein_redo_samples)
 #Need to fix the name of PSTRS14 -- in there as 514!
 df_final_protein2$sample_ID<-ifelse(df_final_protein2$sample_ID == 'PSTR514_1', 'PSTRS14_1', 
                                     as.character(df_final_protein2$sample_ID))
-view(df_final_protein2)
+#View(df_final_protein2)
 
 #Prepare data for graphing
 
   #Accounting for volume of tissue slurry in calculated protein concentrations 
-energy_starting_volume<- read_csv("Lab Data/Proteins/energyreserve_starting_volume.csv", 
+energy_starting_volume<- read_csv("Raw_data/Lab Data/Proteins/energyreserve_starting_volume.csv", 
                                   col_types = cols(total_tissue_slurry_volume_ml = col_number()))
 final_protein2<-merge(df_final_protein2, energy_starting_volume, by="sample_ID")
 
@@ -1057,7 +1203,7 @@ protein_abs_means$final_protein_mg<- protein_abs_means$final_protein_ug / 1000
 
 
   # (1) Back-calculating protein concentrations to biomass (mg) 
-BM_measurements <- read_csv("~/Desktop/Honors Thesis/Lab Data/backcalcs/BM_measurements.csv", 
+BM_measurements <- read_csv("Raw_data/Lab Data/backcalcs/BM_measurements.csv", 
                             col_types = cols(ash_free_dry_weight_g = col_number(), 
                                              dry_weight_volume_ml = col_number(), 
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
@@ -1072,7 +1218,7 @@ protein_bm_analysis<-merge(protein_abs_means, BM_measurements, by="sample_ID")
 protein_bm_analysis$protein_mg_mg<- protein_bm_analysis$final_protein_mg / protein_bm_analysis$total_dry_weight_mg
 
 #Raw data
-samples_treatments <- read_csv("Lab Data/backcalcs/samples_treatments.csv")
+samples_treatments <- read_csv("Raw_data/Lab Data/backcalcs/samples_treatments.csv")
 protein_mg_mg_treatments<-merge(protein_bm_analysis, samples_treatments, by="sample_ID")
 
   #fixing transplant treatment names
@@ -1080,7 +1226,7 @@ protein_mg_mg_treatments$treatment<-ifelse(protein_mg_mg_treatments$treatment ==
 protein_mg_mg_treatments$treatment<-ifelse(protein_mg_mg_treatments$treatment == 'Native OS', 'OS Native', as.character(protein_mg_mg_treatments$treatment))
 
   #save cleaned protein concentration (to biomass) data for records
-write_csv(protein_mg_mg_treatments, file="~/Cleaned_data/protein_data.csv")
+write_csv(protein_mg_mg_treatments, file="Cleaned_data/protein_data.csv")
 #write_xlsx(protein_mg_mg_treatments, path="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/protein_data.xlsx")
 
 
@@ -1091,15 +1237,15 @@ write_csv(protein_mg_mg_treatments, file="~/Cleaned_data/protein_data.csv")
 #         avg_standard_area_pixels = col_number(), 
 #         avg_sa_fragment_pixels = col_number(),
 #         sample_area_cm2 = col_number()))
-# View(sa_measurements)
+# #View(sa_measurements)
 # 
 # #combine the datasets!
 # protein_sa_analysis<-merge(protein_abs_means, sa_measurements, by="sample_ID")
-# view(protein_sa_analysis)
+# #View(protein_sa_analysis)
 # 
 # #now calculate mg/cm^2 -- type out the calculation necessary for this!
 # protein_sa_analysis$protein_mg_cm2<- protein_sa_analysis$final_protein_mg / protein_sa_analysis$sample_area_cm2
-# view(protein_sa_analysis)
+# #View(protein_sa_analysis)
 # 
 #   #save carb concentration (mg/cm^2) data for records 
 # write_csv(protein_sa_analysis, file="all_corals_protein_mgcm2_data.csv")
@@ -1150,10 +1296,10 @@ Protein_Fig <- ggplot(Protein_BM_mean_plot_data,
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
 
 # save image as a .jpeg
-ggsave("Protein_Fig_Sep_12_26.jpg", plot=Protein_Fig, path="~/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Protein_Fig_Sep_12_26.jpg", plot=Protein_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data (no NAs in transplant treatment) for statistical analysis 
-write_csv(protein_mg_mg_treatments_noNA, file="~/Cleaned_data/protein_noNA_data.csv")
+write_csv(protein_mg_mg_treatments_noNA, file="Cleaned_data/protein_noNA_data.csv")
 
 ```
 
@@ -1162,7 +1308,7 @@ write_csv(protein_mg_mg_treatments_noNA, file="~/Cleaned_data/protein_noNA_data.
 ```{r}
 #| eval: false
 #Load data 
-protein_bm_data <- read_csv("~/Cleaned_data/protein_noNA_data.csv",
+protein_bm_data <- read_csv("Cleaned_data/protein_noNA_data.csv",
                             col_types = cols(protein_mg_mg = col_number()))
 
 #Test for normality
@@ -1225,7 +1371,7 @@ stats_proteins
 ```{r}
 #| eval: false
 #Load and format code
-Carb_data <- read_csv("Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_assay_data.csv", 
+Carb_data <- read_csv("Raw_data/Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_assay_data.csv", 
                       col_types = cols(plate_number = col_character(), 
                                        row = col_character(), 
                                        column = col_character(), 
@@ -1271,7 +1417,7 @@ carb_samples$m<- ifelse(carb_samples$plate_number==4, 0.867211, 0.809757)
 carb_samples$b<- ifelse(carb_samples$plate_number==4, -0.211298, -0.191055)
 
 #Also some coral samples required a rerun in the spectrometer. Therefore some sample replicates (with abosorbance values over those of the maximum concentration standards) were removed and added from their "redo" plate results. 
-redo_carb_data <- read_csv("Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_redo_data.csv", col_types = cols(plate_number = col_character(), column = col_character(), replicate = col_character(), absorbance_485 = col_number(), concentration_mg_ml = col_number()))
+redo_carb_data <- read_csv("Raw_data/Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_redo_data.csv", col_types = cols(plate_number = col_character(), column = col_character(), replicate = col_character(), absorbance_485 = col_number(), concentration_mg_ml = col_number()))
 
 redo_carb_standards<-filter(redo_carb_data, carb_source=='standard')
 
@@ -1303,14 +1449,14 @@ carb_samples2<-carb_samples[-c(7,8,9,28,29,30),-c(1)]
 redo_carb_samples2<-redo_carb_samples[-c(1,2,3,10,11,12),]
 redo_carb_samples3<-redo_carb_samples2[,-c(5)]
 redo_carb_samples3$dilution<- ifelse(redo_carb_samples3$sample_ID=="SSIDF20_3", 0.083, 0.067)
-view(redo_carb_samples3)
+#View(redo_carb_samples3)
 
 #combine data sets together
 df_final_carb<-rbind(carb_samples2, redo_carb_samples3)
 
 #Prepare data for graphing
   #Accounting for volume of tissue slurry in calculated carbohydrate concentrations
-energy_starting_volume2 <- read_csv("Lab Data/Proteins/energyreserve_starting_volume.csv", 
+energy_starting_volume2 <- read_csv("Raw_data/Lab Data/Proteins/energyreserve_starting_volume.csv", 
                                           col_types = cols(total_tissue_slurry_volume_ml = col_number()))
 final_carb<-merge(df_final_carb, energy_starting_volume2, by="sample_ID")
   
@@ -1325,7 +1471,7 @@ carb_abs_means$calc_conc_mg_ml<- carb_abs_means$m * carb_abs_means$meanabsor + c
 carb_abs_means$final_carb_mg<- carb_abs_means$calc_conc_mg_ml * (carb_abs_means$dilution * carb_abs_means$meanvol) 
 
   # (1) Back-calculating carbohydrate concentrations to biomass (g) 
-BM_measurements <- read_csv("Lab Data/backcalcs/BM_measurements.csv", 
+BM_measurements <- read_csv("Raw_data/Lab Data/backcalcs/BM_measurements.csv", 
                             col_types = cols(ash_free_dry_weight_g = col_number(), 
                                              dry_weight_volume_ml = col_number(), 
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
@@ -1334,7 +1480,7 @@ carb_bm_analysis<-merge(carb_abs_means, BM_measurements, by="sample_ID")
 carb_bm_analysis$carb_mg_mg<- carb_bm_analysis$final_carb_mg / (carb_bm_analysis$total_dry_weight_mg)
 
 #Raw data
-samples_treatments <- read_csv("Lab Data/backcalcs/samples_treatments.csv")
+samples_treatments <- read_csv("Raw_data/Lab Data/backcalcs/samples_treatments.csv")
 carb_mgmg_treatments<-merge(carb_bm_analysis, samples_treatments, by="sample_ID")
   
   #fixing treatment names
@@ -1345,7 +1491,7 @@ carb_mgmg_treatments$treatment<-ifelse(carb_mgmg_treatments$treatment == 'Native
 
 
   #save carb concentration (mg/mg) data for records
-write_csv(carb_mgmg_treatments, file="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/carb_data.csv")
+write_csv(carb_mgmg_treatments, file="Cleaned_data/carb_data.csv")
 #write_xlsx(carb_mgmg_treatments, path="carb_data.xlsx")
 
 
@@ -1357,15 +1503,15 @@ write_csv(carb_mgmg_treatments, file="~/Desktop/Desktop - Callie’s MacBook Pro
 #         avg_standard_area_pixels = col_number(), 
 #         avg_sa_fragment_pixels = col_number(),
 #         sample_area_cm2 = col_number()))
-# View(sa_measurements)
+# #View(sa_measurements)
 # 
 # #combine the datasets!
 # carb_sa_analysis<-merge(carb_abs_means, sa_measurements, by="sample_ID")
-# view(carb_sa_analysis)
+# #View(carb_sa_analysis)
 # 
 # #now calculate mg/cm^2 -- type out the calculation necessary for this!
 # carb_sa_analysis$carb_mg_cm2<- carb_sa_analysis$final_carb_mg / carb_sa_analysis$sample_area_cm2
-# view(carb_sa_analysis)
+# #View(carb_sa_analysis)
 # 
 # 
 #   #save carb concentration (mg/cm^2) data for records 
@@ -1393,7 +1539,7 @@ carb_mgmg_treatments_noNA<- carb_mgmg_treatments_noNA %>%
 Carbs_BM_mean_plot_data <- carb_mgmg_treatments_noNA %>%
   group_by(species, treatment, transplant_envir, home_envir) %>%
   summarise(mean=mean(carb_mg_mg), sd=sd(carb_mg_mg), n=n(), se=sd/sqrt(n))
-view(Carbs_BM_mean_plot_data)
+#View(Carbs_BM_mean_plot_data)
 
 #Graph plot of carbohydrates by species and transplant treatment 
 pd = position_dodge(width = 0.3)
@@ -1420,10 +1566,10 @@ Carbs_Fig <- ggplot(Carbs_BM_mean_plot_data,
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
 
 # save image as a .jpeg
-ggsave("Carb_Fig_Sep_12_26.jpg", plot=Carbs_Fig, path="~/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Carb_Fig_Sep_12_26.jpg", plot=Carbs_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data (w/no NA for treatment) for statistical analysis 
-write_csv(carb_mgmg_treatments_noNA, file="~/Cleaned_data/carbs_noNA_data.csv")
+write_csv(carb_mgmg_treatments_noNA, file="Cleaned_data/carbs_noNA_data.csv")
 ```
 
 
@@ -1432,7 +1578,7 @@ write_csv(carb_mgmg_treatments_noNA, file="~/Cleaned_data/carbs_noNA_data.csv")
 ```{r}
 #| eval: false
 #Load data 
-carbs_bm_data <- read_csv("~/Cleaned_data/carbs_noNA_data.csv",
+carbs_bm_data <- read_csv("Cleaned_data/carbs_noNA_data.csv",
                             col_types = cols(carb_mg_mg = col_number()))
 #Test for normality
 
@@ -1497,12 +1643,12 @@ stats_carbs
 #| eval: false
 #Load data set
 
-Lipid_data <- read_csv("~/Lab Data/Lipids/compiled_lipid_data.csv", 
+Lipid_data <- read_csv("Raw_data/Lab Data/Lipids/compiled_lipid_data.csv", 
     col_types = cols(plate_number = col_character(), 
         column = col_character(), replicate = col_character(), 
         blank_correction_absorbance_540 = col_number(), 
         concentration_mg_ml = col_number()))
-View(Lipid_data)
+#View(Lipid_data)
 
 #This document is using values received from a spectrometer to calculate the concentration of lipids from each coral sample. First a lipid standard is created from plotting the absorbance of known lipid concentrations (standards)
 lipid_standards<-filter(Lipid_data, lipid_source=='standard')
@@ -1544,7 +1690,7 @@ lipid_samples$b<- ifelse(lipid_samples$plate_number==1, -0.019183, 0.009980)
 
 #Prepare sample data for graphing
 #Accounting for volume of tissue slurry in calculated carbohydrate concentrations
-energy_starting_volume <- read_csv("Lab Data/Proteins/energyreserve_starting_volume.csv", 
+energy_starting_volume <- read_csv("Raw_data/Lab Data/Proteins/energyreserve_starting_volume.csv", 
                                     col_types = cols(total_tissue_slurry_volume_ml = col_number()))
 final_lipid<-merge(lipid_samples, energy_starting_volume, by="sample_ID")
 
@@ -1557,7 +1703,7 @@ lipid_abs_means$calc_conc_mg_ml<- lipid_abs_means$m * lipid_abs_means$meanabsor 
 lipid_abs_means$final_lipid_mg<- lipid_abs_means$calc_conc_mg_ml * lipid_abs_means$meanvol * lipid_abs_means$dilution  
 
   # (1) Back-calculating lipid concentrations to biomass (g) 
-BM_measurements <- read_csv("Lab Data/backcalcs/BM_measurements.csv", 
+BM_measurements <- read_csv("Raw_data/Lab Data/backcalcs/BM_measurements.csv", 
                             col_types = cols(ash_free_dry_weight_g = col_number(), 
                                              dry_weight_volume_ml = col_number(), 
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
@@ -1569,7 +1715,7 @@ lipid_bm_analysis<-merge(lipid_abs_means, BM_measurements, by="sample_ID")
 lipid_bm_analysis$lipid_mg_mg<- lipid_bm_analysis$final_lipid_mg / (lipid_bm_analysis$total_dry_weight_mg)
 
   #assign treatments to samples
-samples_treatments <- read_csv("Lab Data/backcalcs/samples_treatments.csv")
+samples_treatments <- read_csv("Raw_data/Lab Data/backcalcs/samples_treatments.csv")
 
 lipid_mgmg_treatments<-merge(lipid_bm_analysis, samples_treatments, by="sample_ID")
 
@@ -1581,7 +1727,7 @@ lipid_mgmg_treatments$treatment<-ifelse(lipid_mgmg_treatments$treatment == 'Nati
 
 
 #save lipid concentration (mg/mg) data for records
-write_csv(lipid_mgmg_treatments, file="~/Cleaned_data/lipid_data.csv")
+write_csv(lipid_mgmg_treatments, file="Cleaned_data/lipid_data.csv")
 #write_xlsx(lipid_mgmg_treatments, path="~/Cleaned_data/lipid_data.xlsx")
 
   # (2) Back-calculating lipid concentrations to surface area (cm^2)
@@ -1590,15 +1736,15 @@ write_csv(lipid_mgmg_treatments, file="~/Cleaned_data/lipid_data.csv")
 #                                              avg_standard_area_pixels = col_number(), 
 #                                              avg_sa_fragment_pixels = col_number(),
 #                                              sample_area_cm2 = col_number()))
-# View(sa_measurements)
+# #View(sa_measurements)
 # 
 # #combine the datasets!
 # lipid_sa_analysis<-merge(lipid_abs_means, sa_measurements, by="sample_ID")
-# view(lipid_sa_analysis)
+# #View(lipid_sa_analysis)
 # 
 # #calculate concentration mg/cm2
 # lipid_sa_analysis$lipid_mg_cm2<- lipid_sa_analysis$final_lipid_mg / lipid_sa_analysis$sample_area_cm2
-# view(lipid_sa_analysis)
+# #View(lipid_sa_analysis)
 # 
 #   #save lipid concentration (mg/cm2) data for records
 # write_csv(lipid_sa_analysis, file="all_corals_lipid_mgcm2_data.csv")
@@ -1625,7 +1771,7 @@ lipid_mgmg_treatments_noNA<- lipid_mgmg_treatments_noNA %>%
 Lipids_BM_mean_plot_data <- lipid_mgmg_treatments_noNA %>%
   group_by(species, treatment, transplant_envir, home_envir) %>%
   summarise(mean=mean(lipid_mg_mg), sd=sd(lipid_mg_mg), n=n(), se=sd/sqrt(n))
-view(Lipids_BM_mean_plot_data)
+#View(Lipids_BM_mean_plot_data)
 
 #Graph plot of carbohydrates by species and transplant treatment 
 pd = position_dodge(width = 0.3)
@@ -1652,10 +1798,10 @@ Lipids_Fig <- ggplot(Lipids_BM_mean_plot_data,
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
 
 # save image as a .jpeg
-ggsave("Lipid_Fig_Sep_12_26.jpg", plot=Lipids_Fig, path="~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Lipid_Fig_Sep_12_26.jpg", plot=Lipids_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data for statistical analysis 
-write_csv(lipid_mgmg_treatments_noNA, file="~/Cleaned_data/lipid_noNA_data.csv")
+write_csv(lipid_mgmg_treatments_noNA, file="Cleaned_data/lipid_noNA_data.csv")
 ```
 
 
@@ -1664,7 +1810,7 @@ write_csv(lipid_mgmg_treatments_noNA, file="~/Cleaned_data/lipid_noNA_data.csv")
 ```{r}
 #| eval: false
 #Load data 
-lipids_bm_data <- read_csv("~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/lipid_noNA_data.csv",
+lipids_bm_data <- read_csv("Cleaned_data/lipid_noNA_data.csv",
                             col_types = cols(lipid_mg_mg = col_number()))
 
 #Test for normality
