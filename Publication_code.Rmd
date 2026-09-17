@@ -265,7 +265,7 @@ stats_FvFm <-FvFm_data %>%
 stats_FvFm
 ```
 
-```{r CBB stats run}
+```{r CBB stats run for PAM}
 
 # just renaming to make it shorter
 pam_df <- FvFm_all_coral_one_point_no_NAs %>% 
@@ -415,16 +415,18 @@ chl_abs_means<- final_chl %>%
 #Use the following equations to calculate chlorophyll concentration (which will be in ug/mL)
     #First account for the path length in absorbance values 
     #Again, the blank averages from each plate are...     
-        #Plate 5 Blank average = 0.07475
-        #Plate 6 Blank average = 0.074909
+        #Plate 5 Blank average = 0.07475 # calculated from plate reader (in lab notes)
+        #Plate 6 Blank average = 0.074909 # calculated from plate reader (in lab notes)
 chl_abs_means$blank<-ifelse(chl_abs_means$plate_number==5, 0.07475, 0.074909)
-    #And the path lengths of each plate are...
-        #Plate 5 path length = 0.6493
-        #Plate 6 path length = 0.6445
+
+#And the path lengths of each plate are...
+        #Plate 5 path length = 0.6493 # reported from plate reader (in lab notes)
+        #Plate 6 path length = 0.6445 # reported from plate reader (in lab notes)
 chl_abs_means$pathlength<-ifelse(chl_abs_means$plate_number==5, 0.6493, 0.6445)
-    #Equation for adjusting with path length is: abs(wavelength)=(abs-blank)/pathlength
+
+#Equation for adjusting with path length is: absor @ given wavelength = (absor-blank)/pathlength (from Warren 2008)
 chl_abs_means$adjusted_abs_value<-(chl_abs_means$meanabsor - chl_abs_means$blank)/chl_abs_means$pathlength
-    #Then calculate concentrations using these equations:
+    #Then calculate concentrations using these equations from Ritchie (2006):
     #chla = -3.4551(A632) + 13.6849(A665)
     #chlc2 = 32.9371(A632) - 7.0140(A665)
 
@@ -494,61 +496,99 @@ Chl_mean_plot_data <- chl_ugcm2_treatments_noNA %>%
             meanchlc2=mean(chlc2_ug_cm2), sdchlc2=sd(chlc2_ug_cm2), 
             nchlc2=n(), sechlc2=sdchlc2/sqrt(nchlc2))
 
+## CBB edit: what you were trying above:
+Chl_mean_plot_data$species <- factor(Chl_mean_plot_data$species, levels = c("SSID","PSTR"))
+chl_ugcm2_treatments_noNA$species <- factor(chl_ugcm2_treatments_noNA$species, levels = c("SSID","PSTR"))
+
 #======Begin graphing======
-pd = position_dodge(width = 0.3)
 
 #Graph plot of chlorophyll-a by species and transplant treatment 
 
-chla_Fig <- ggplot(Chl_mean_plot_data, aes(x=treatment, y=meanchla, color=species))+
-  geom_point(size=3, position=pd)+
-  geom_point(data=chl_ugcm2_treatments_noNA, 
-             aes(x=treatment, y=chla_ug_cm2, color=species),
-             position=pd, size=2.5, alpha=0.3)+
-  geom_line(aes(group=species), position=pd)+
+chla_Fig <- ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x= factor(treatment, levels = c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchla, color = species, group=species)) +
   geom_errorbar(aes(x=treatment, ymin=meanchla-sechla, ymax=meanchla+sechla), 
-                width=0.2, size=1, position=pd)+
-  facet_wrap(~home_envir, scales='free_x')+
-  theme_bw() +
-  theme(axis.title = element_text(size = 14), # make axes title text larger
-        axis.text = element_text(size = 12), # make axes text larger  
-        legend.title = element_text(size = 13), # make legend title larger 
-        legend.text = element_text(size = 13, face = "italic"), # make legend text larger
-        strip.text = element_text(size = 13)) +  # make text in facet title larger
+                width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=treatment, y=chla_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~home_envir, scales='free_x') +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    legend.title = element_text(size = 13), # make legend title larger 
+    legend.text = element_text(size = 13, face = "italic"), # make legend text larger
+    strip.text = element_text(size = 14)) +  # make text in facet title larger 
   guides(color = guide_legend(title = "Species")) + 
   xlab("Treatment") +
   ylab("Mean [chl-a] (ug/cm^2)")+
-  scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
-  
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c('S. siderea', 'P. strigosa')) 
+
+chla_Fig2 <-ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=meanchla, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanchla-sechla, ymax=meanchla+sechla), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chla_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("NS", "OS")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Native Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Mean [chl-a] (ug/cm^2)")
+
+
 # export graph as .jpg
-ggsave("Chla_Fig_Sep_12_26.jpg", plot=chla_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Chla_Fig_Sep_17_26.jpg", plot=chla_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+
+
 
 
 #Graph plot of chlorophyll-c2 by species and transplant treatment
-chlc2_Fig <- ggplot(Chl_mean_plot_data, aes(x=treatment, y=meanchlc2, color=species))+
-  geom_point(size=3, position=pd)+
-  geom_point(data=chl_ugcm2_treatments_noNA, 
-             aes(x=treatment, y=chlc2_ug_cm2, color=species),
-             position=pd, size=2.5, alpha=0.3)+
-  geom_line(aes(group=species), position=pd)+
+chlc2_Fig <- ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x= factor(treatment, levels = c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchlc2, color = species, group=species)) +
   geom_errorbar(aes(x=treatment, ymin=meanchlc2-sechlc2, ymax=meanchlc2+sechlc2), 
-                width=0.2, size=1, position=pd)+
-  facet_wrap(~home_envir, scales='free_x')+
-  theme_bw() +
-  theme(axis.title = element_text(size = 14), # make axes title text larger
-        axis.text = element_text(size = 12), # make axes text larger  
-        legend.title = element_text(size = 13), # make legend title larger 
-        legend.text = element_text(size = 13, face = "italic"), # make legend text larger
-        strip.text = element_text(size = 13)) +  # make text in facet title larger
+                width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=treatment, y=chlc2_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~home_envir, scales='free_x') +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    legend.title = element_text(size = 13), # make legend title larger 
+    legend.text = element_text(size = 13, face = "italic"), # make legend text larger
+    strip.text = element_text(size = 14)) +  # make text in facet title larger 
   guides(color = guide_legend(title = "Species")) + 
   xlab("Treatment") +
   ylab("Mean [chl-c2] (ug/cm^2)")+
-  scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c('S. siderea', 'P. strigosa')) 
+
+chlc2_Fig2 <- ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=meanchlc2, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanchlc2-sechlc2, ymax=meanchlc2+sechlc2), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chlc2_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("Nearshore", "Offshore")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Home Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Mean [chl-c2] (ug/cm^2)")
 
 # export graph as .jpg
-ggsave("Chlc2_Fig_Sep_12_26.jpg", plot=chlc2_Fig, path="~/Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Chlc2_Fig_Sep_17_26.jpg", plot=chlc2_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data (w/out NA in transplant treatment) for statistical analysis 
-write_csv(chl_ugcm2_treatments_noNA, file="Cleaned_data/chl_noNA_data.csv")
+#write_csv(chl_ugcm2_treatments_noNA, file="Cleaned_data/chl_noNA_data.csv")
 ```
 
 
@@ -557,9 +597,9 @@ write_csv(chl_ugcm2_treatments_noNA, file="Cleaned_data/chl_noNA_data.csv")
 ```{r}
 #| eval: false
 #Load data 
-chl_analysis_data <- read_csv("Cleaned_data/chl_noNA_data.csv", 
-    col_types = cols(chla_ug_cm2 = col_number(), 
-        chlc2_ug_cm2 = col_number()))
+#chl_analysis_data <- read_csv("Cleaned_data/chl_noNA_data.csv", 
+#    col_types = cols(chla_ug_cm2 = col_number(), 
+#        chlc2_ug_cm2 = col_number()))
 
 #Test for normality
 
@@ -612,6 +652,100 @@ stats_chla <-chl_analysis_data %>%
           mean_chla = mean(chla_ug_cm2))
 stats_chla
 ```
+
+```{r CBB chla stats}
+
+
+# just renaming to make it shorter
+chla_df <- chl_ugcm2_treatments_noNA %>% 
+  mutate(across(c(17:20), as.factor)) %>% # convert several columns to factors
+  mutate(colony_ID = str_extract(sample_ID, "[0-9]")) # need to add colony ID for random effects
+
+
+# ------------- SSID-only Chla stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_chla <- subset(chla_df, species == "SSID")
+
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_chla, aes(x = chla_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_chla, aes(sample = chla_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_chla_lm <- lmer(chla_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_chla)
+check_model(SSID_chla_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_chla_lm_trt <- lmer(chla_ug_cm2 ~ treatment + (1 | colony_ID), data = SSID_chla)
+compare_performance(SSID_chla_lm, SSID_chla_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+SSID_chla_lm_simple <- lm(chla_ug_cm2 ~ treatment, data = SSID_chla)
+AIC(SSID_chla_lm, SSID_chla_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_chla_lm_simple)
+anova(SSID_chla_lm_simple) 
+emmeans(SSID_chla_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID chl a model: SSID_chla_lm_simple <- lm(chla_ug_cm2 ~ treatment, data = SSID_chla)
+
+
+
+# ------------- PSTR-only Chla stats
+
+PSTR_chla_full <- subset(chla_df, species != "SSID")
+table(PSTR_chla_full$treatment) # only n=1 for 'Transplant to NS' so cutting that level
+
+PSTR_chla <- PSTR_chla_full %>% 
+  filter(treatment != "Transplant to NS") %>% # remove the treatment with n=1
+  droplevels()
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_chla, aes(x = chla_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 13) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_chla, aes(sample = chla_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_chla_lm <- lmer(chla_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_chla)
+check_model(PSTR_chla_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_chla_lm_trt <- lmer(chla_ug_cm2 ~ treatment + (1 | colony_ID), data = PSTR_chla)
+compare_performance(PSTR_chla_lm, PSTR_chla_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_chla_lm_simple <- lm(chla_ug_cm2 ~ treatment, data = PSTR_chla)
+AIC(PSTR_chla_lm, PSTR_chla_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_chla_lm_simple)
+anova(PSTR_chla_lm_simple) 
+emmeans(PSTR_chla_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR chl a model: PSTR_chla_lm_simple <- lm(chla_ug_cm2 ~ treatment, data = PSTR_chla)
+
+```
+
 
 ## Statistical analysis for chlorophyll-c2
 
@@ -675,6 +809,81 @@ stats_chlc2 <-chl_analysis_data %>%
 stats_chlc2
 ```
 
+```{r CBB chlc2 stats}
+
+
+# ------------- SSID-only Chlc2 stats
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_chla, aes(x = chlc2_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 12) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_chla, aes(sample = chlc2_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_chlc2_lm <- lmer(chlc2_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_chla)
+check_model(SSID_chlc2_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_chlc2_lm_trt <- lmer(chlc2_ug_cm2 ~ treatment + (1 | colony_ID), data = SSID_chla)
+compare_performance(SSID_chlc2_lm, SSID_chlc2_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+SSID_chlc2_lm_simple <- lm(chlc2_ug_cm2 ~ treatment, data = SSID_chla)
+AIC(SSID_chlc2_lm, SSID_chlc2_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_chlc2_lm_simple)
+anova(SSID_chlc2_lm_simple) 
+emmeans(SSID_chlc2_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID chl c2 model: SSID_chlc2_lm_simple <- lm(chlc2_ug_cm2 ~ treatment, data = SSID_chla)
+
+
+
+# ------------- PSTR-only Chla stats
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_chla, aes(x = chlc2_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 6) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_chla, aes(sample = chlc2_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_chlc2_lm <- lmer(chlc2_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_chla)
+check_model(PSTR_chlc2_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_chlc2_lm_trt <- lmer(chlc2_ug_cm2 ~ treatment + (1 | colony_ID), data = PSTR_chla)
+compare_performance(PSTR_chlc2_lm, PSTR_chlc2_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_chlc2_lm_simple <- lm(chlc2_ug_cm2 ~ treatment, data = PSTR_chla)
+AIC(PSTR_chlc2_lm, PSTR_chlc2_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_chlc2_lm_simple)
+anova(PSTR_chlc2_lm_simple) 
+emmeans(PSTR_chlc2_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR chl c2 model: PSTR_chlc2_lm_simple <- lm(chlc2_ug_cm2 ~ treatment, data = PSTR_chla)
+
+```
 
 # Mean + Percent Change in Buoyant weight
 
@@ -786,7 +995,6 @@ Modifications made:
 - change timepoints to months (T0 - T1) to (0 - 3)
 
 ```{r}
-pd = position_dodge(width = 0.7) #increase the jitter width for this figure 
 
 BW_Change_Fig <- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), 
                                               y=meanchange, color=timepoint_comparison)) + #mean data
@@ -811,8 +1019,68 @@ BW_Change_Fig <- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatmen
   ylab("Percent change in buoyant weight") + 
   scale_color_manual(name = "Months:", labels=c('0 - 3', '0 - 9', '0 - 17', '0 - 60', '17 - 60'), values=c("#b22222", "#228b21", "#8b4500", "#1f8fff","#7a5eb2"))
 
+
+```
+
+```{r CBB BW plot edit}
+
+BW_Change_Fig2 <- ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison == "T0_T3" | timepoint_comparison == "T0_T4" & n >= 2), aes(x = factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchange, color = timepoint_comparison)) +
+  #ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison =="T0_T3" | "T0_T4"), aes(x = transplant_envir, y=meanchange, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.25, linewidth=0.7, position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = long_alive_corals2 %>% filter(timepoint_comparison == "T0_T3" | timepoint_comparison == "T0_T4"), aes(x=treatment, y=percent_change_bw), position=pjd, size=2.5, alpha=0.2) +
+  facet_wrap(~species, ncol = 1, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) + 
+  scale_color_manual(name = "Months:", labels=c('0 - 17', '0 - 60'), values=c("#8b4500", "#1f8fff")) +
+  theme_bw() + 
+  theme(strip.text.x = element_text(face="italic", size = 12),
+        axis.title = element_text(size = 15), # make axes title text larger
+        axis.text.y = element_text(size = 12), # make axes text larger
+        axis.text.x = element_text(size = 13), #angle = 10, vjust = 0.75),
+        legend.title = element_text(size = 14), # make legend title larger 
+        legend.text = element_text(size = 13)) + # make legend text larger
+  xlab("Transplant Environment") +
+  ylab("Percent change in buoyant weight")
+
+# bw to match other phys figures
+BW_Change_Fig3 <- ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison == "T0_T4" & n >= 2), aes(x = transplant_envir, y=meanchla, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanchla-sechla, ymax=meanchla+sechla), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chla_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("Nearshore", "Offshore")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Home Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Mean [chl-a] (ug/cm^2)")
+  
+  
+  
+  ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison == "T0_T4" & n >= 2), aes(x = factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchange, color = species)) +
+  #ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison =="T0_T3" | "T0_T4"), aes(x = transplant_envir, y=meanchange, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.25, linewidth=0.7, position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = long_alive_corals2 %>% filter(timepoint_comparison == "T0_T4"), aes(x=treatment, y=percent_change_bw), position=pjd, size=2.5, alpha=0.2) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) + 
+  scale_color_manual(values=c("#8b4500", "#1f8fff")) +
+  theme_bw() + 
+  theme(strip.text.x = element_text(face="italic", size = 12),
+        axis.title = element_text(size = 15), # make axes title text larger
+        axis.text.y = element_text(size = 12), # make axes text larger
+        axis.text.x = element_text(size = 13), #angle = 10, vjust = 0.75),
+        legend.title = element_text(size = 14), # make legend title larger 
+        legend.text = element_text(size = 13)) + # make legend text larger
+  xlab("Transplant Environment") +
+  ylab("Percent change in buoyant weight")
+
 # export graph as .jpg 
-ggsave("BWChange_Fig_Sep_12_26.jpg", plot=BW_Change_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("BWChange_Fig_Sep_17_26.jpg", plot=BW_Change_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+
 ```
 
 
@@ -861,6 +1129,97 @@ stats_bw <-longcoral %>%
           count = n(),
           mean_perc_bw = mean(percent_change_bw))
 ```
+
+```{r CBB bw stats}
+
+# just renaming to make it shorter
+bw_df <- longcoral %>% 
+  mutate(colony_ID = factor(str_extract(ID, "[0-9]"))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only BW stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_bw <- subset(bw_df, species == "SSID") %>% 
+  filter(timepoint_comparison == "T0_T4")
+
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_bw, aes(x = percent_change_bw)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_bw, aes(sample = percent_change_bw)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_bw_lm <- lmer(percent_change_bw ~ transplant_site * collection_site + (1 | colony_ID), data = SSID_bw)
+check_model(SSID_bw_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_bw_lm_trt <- lmer(percent_change_bw ~ treatment + (1 | colony_ID), data = SSID_bw)
+compare_performance(SSID_bw_lm, SSID_bw_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for RE model and it is more biologically appropriate
+SSID_bw_lm_simple <- lm(percent_change_bw ~ treatment, data = SSID_bw)
+AIC(SSID_bw_lm, SSID_bw_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_bw_lm_trt)
+anova(SSID_bw_lm_trt) 
+emmeans(SSID_bw_lm_trt, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID BW model: SSID_bw_lm_trt <- lmer(percent_change_bw ~ treatment + (1 | colony_ID), data = SSID_bw)
+
+
+
+# ------------- PSTR-only BW stats
+
+# selecing for PSTR only:
+PSTR_bw <- subset(bw_df, species != "SSID") %>% 
+  filter(timepoint_comparison == "T0_T4") %>% 
+  filter(treatment != "Transplant to NS") # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): okay
+ggplot(PSTR_bw, aes(x = percent_change_bw)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_bw, aes(sample = percent_change_bw)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_bw_lm <- lmer(percent_change_bw ~ transplant_site * collection_site + (1 | colony_ID), data = PSTR_bw)
+check_model(PSTR_bw_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_bw_lm_trt <- lmer(percent_change_bw ~ treatment + (1 | colony_ID), data = PSTR_bw)
+compare_performance(PSTR_bw_lm, PSTR_bw_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_bw_lm_simple <- lm(percent_change_bw ~ treatment, data = PSTR_bw)
+AIC(PSTR_bw_lm, PSTR_bw_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_bw_lm_simple)
+anova(PSTR_bw_lm_simple) 
+emmeans(PSTR_bw_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR BW model: PSTR_bw_lm_simple <- lm(percent_change_bw ~ treatment, data = PSTR_bw)
+
+```
+
 
 # Survivorship
 
