@@ -185,8 +185,27 @@ PAM_Fig <- ggplot(data = PAM_means_no_NAs %>% drop_na(), aes(x= factor(treatment
   ylab("Fv/Fm values") +
   scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c('S. siderea', 'P. strigosa')) 
 
+PAM_Fig2 <- ggplot(data = PAM_means_no_NAs %>% drop_na(), aes(x = transplant_envir, y=meanFvFm, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanFvFm-SEFvFm, ymax=meanFvFm+SEFvFm), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = FvFm_all_coral_one_point_no_NAs, aes(x=transplant_envir, y=avg_FvFm), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("NS", "OS")) +
+  scale_x_discrete(labels = c("NS", "OS")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Native Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Fv/Fm values")
+
+
 # export graph as .jpg
-ggsave("PAM_Fig_Sep_12_26.jpg", plot=PAM_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("PAM_Fig_Sep_17_26.jpg", plot=PAM_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 ```
 
 
@@ -523,7 +542,7 @@ chla_Fig <- ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x= factor(treatm
   ylab("Mean [chl-a] (ug/cm^2)")+
   scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c('S. siderea', 'P. strigosa')) 
 
-chla_Fig2 <-ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=meanchla, color = home_envir, group = home_envir)) +
+chla_Fig2 <- ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=meanchla, color = home_envir, group = home_envir)) +
   geom_errorbar(aes(x=transplant_envir, ymin=meanchla-sechla, ymax=meanchla+sechla), width=0.2, linewidth=1, position=pd) +
   geom_line(position=pd) +
   geom_point(size=3, position=pd) +
@@ -574,6 +593,7 @@ chlc2_Fig2 <- ggplot(data = Chl_mean_plot_data %>% drop_na(), aes(x = transplant
   geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chlc2_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
   facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
   scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("Nearshore", "Offshore")) +
+  scale_x_discrete(labels = c("NS", "OS")) +
   theme_bw() + 
   theme(
     axis.title = element_text(size = 15), # make axes title text larger
@@ -922,15 +942,15 @@ BW_alive_TP_means<-alive_corals_and_TPs %>%
 
 ```{r}
 #Graph plot of % change in buoyant weight by species, transplant treatment, and time point 
-pd = position_dodge(width = 0.7)
+pd_bw = position_dodge(width = 0.7)
 new_species <- c("PSTR" = "P. strigosa", "SSID" = "S. siderea")
 
 BW_alive_TP_plot <- ggplot(data= BW_alive_TP_means[!is.na(BW_alive_TP_means$treatment), ], 
       aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanBW, color=timepoint)) +
   geom_point(data = alive_corals_and_TPs[!is.na(alive_corals_and_TPs$treatment), ], 
-             aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=bw), position=pd, size=2, alpha=0.2) +
-  geom_errorbar(aes(ymin=meanBW-SEBW, ymax=meanBW+SEBW), position=pd, width=0.3) +
-  geom_point(size=2, position=pd) +
+             aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=bw), position=pd_bw, size=2, alpha=0.2) +
+  geom_errorbar(aes(ymin=meanBW-SEBW, ymax=meanBW+SEBW), position=pd_bw, width=0.3) +
+  geom_point(size=2, position=pd_bw) +
   xlab("Treatment") +
   ylab("Mean buoyant weight (g)") +
   guides(color = guide_legend(title = "Time point")) + 
@@ -1024,11 +1044,20 @@ BW_Change_Fig <- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatmen
 
 ```{r CBB BW plot edit}
 
-BW_Change_Fig2 <- ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison == "T0_T3" | timepoint_comparison == "T0_T4" & n >= 2), aes(x = factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchange, color = timepoint_comparison)) +
-  #ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison =="T0_T3" | "T0_T4"), aes(x = transplant_envir, y=meanchange, color = home_envir, group = home_envir)) +
+
+bw_mean_df <- BW_timepointcomparison_means %>% 
+  mutate(treat = treatment) %>% 
+  mutate(treat = gsub("NS Native", "NS_NS", treat),
+         treat = gsub("OS Native", "OS_OS", treat),
+         treat = gsub("Transplant to NS", "OS_NS", treat),
+         treat = gsub("Transplant to OS", "NS_OS", treat)) %>% 
+  separate(treat, c("nat_env", "tran_env"))
+
+
+BW_Change_Fig2 <- ggplot(data = bw_mean_df %>% filter(timepoint_comparison == "T0_T3" | timepoint_comparison == "T0_T4" & n >= 2), aes(x = factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchange, color = timepoint_comparison)) +
   geom_errorbar(aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.25, linewidth=0.7, position=pd) +
   geom_point(size=3, position=pd) +
-  geom_point(data = long_alive_corals2 %>% filter(timepoint_comparison == "T0_T3" | timepoint_comparison == "T0_T4"), aes(x=treatment, y=percent_change_bw), position=pjd, size=2.5, alpha=0.2) +
+  #geom_point(data = long_alive_corals2 %>% filter(timepoint_comparison == "T0_T4"), aes(x=treatment, y=percent_change_bw), position=pjd, size=2.5, alpha=0.2) +
   facet_wrap(~species, ncol = 1, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) + 
   scale_color_manual(name = "Months:", labels=c('0 - 17', '0 - 60'), values=c("#8b4500", "#1f8fff")) +
   theme_bw() + 
@@ -1041,45 +1070,35 @@ BW_Change_Fig2 <- ggplot(data = BW_timepointcomparison_means %>% filter(timepoin
   xlab("Transplant Environment") +
   ylab("Percent change in buoyant weight")
 
+
+
+
+
+
+
 # bw to match other phys figures
-BW_Change_Fig3 <- ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison == "T0_T4" & n >= 2), aes(x = transplant_envir, y=meanchla, color = home_envir, group = home_envir)) +
-  geom_errorbar(aes(x=transplant_envir, ymin=meanchla-sechla, ymax=meanchla+sechla), width=0.2, linewidth=1, position=pd) +
+BW_Change_Fig3 <- ggplot(data = bw_mean_df %>% filter(timepoint_comparison == "T0_T4" & n >= 2), aes(x = tran_env, y = meanchange, color = nat_env, group = nat_env)) +
+  geom_errorbar(aes(x=tran_env, ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.2, linewidth=1, position=pd) +
   geom_line(position=pd) +
   geom_point(size=3, position=pd) +
-  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chla_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  geom_point(data = long_alive_corals2 %>% filter(timepoint_comparison == "T0_T4"), aes(x=transplant_site, y=percent_change_bw, color = collection_site, group = collection_site), position=pjd, size=2.5, alpha=0.2) +
   facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
   scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("Nearshore", "Offshore")) +
+  scale_x_discrete(labels = c("NS", "OS")) +
   theme_bw() + 
   theme(
     axis.title = element_text(size = 15), # make axes title text larger
     axis.text = element_text(size = 12), # make axes text larger  
     #legend.title = element_blank(), # remove legend title 
     strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
-  guides(color = guide_legend(title = "Home Environment")) + 
-  xlab("Transplant Environment") +
-  ylab("Mean [chl-a] (ug/cm^2)")
-  
-  
-  
-  ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison == "T0_T4" & n >= 2), aes(x = factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchange, color = species)) +
-  #ggplot(data = BW_timepointcomparison_means %>% filter(timepoint_comparison =="T0_T3" | "T0_T4"), aes(x = transplant_envir, y=meanchange, color = home_envir, group = home_envir)) +
-  geom_errorbar(aes(x=factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.25, linewidth=0.7, position=pd) +
-  geom_point(size=3, position=pd) +
-  geom_point(data = long_alive_corals2 %>% filter(timepoint_comparison == "T0_T4"), aes(x=treatment, y=percent_change_bw), position=pjd, size=2.5, alpha=0.2) +
-  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) + 
-  scale_color_manual(values=c("#8b4500", "#1f8fff")) +
-  theme_bw() + 
-  theme(strip.text.x = element_text(face="italic", size = 12),
-        axis.title = element_text(size = 15), # make axes title text larger
-        axis.text.y = element_text(size = 12), # make axes text larger
-        axis.text.x = element_text(size = 13), #angle = 10, vjust = 0.75),
-        legend.title = element_text(size = 14), # make legend title larger 
-        legend.text = element_text(size = 13)) + # make legend text larger
+  guides(color = guide_legend(title = "Native Environment")) + 
   xlab("Transplant Environment") +
   ylab("Percent change in buoyant weight")
+  
+
 
 # export graph as .jpg 
-ggsave("BWChange_Fig_Sep_17_26.jpg", plot=BW_Change_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("BWChange_Fig_Sep_17_26.jpg", plot=BW_Change_Fig3, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 ```
 
@@ -1230,7 +1249,7 @@ emmeans(PSTR_bw_lm_simple, pairwise ~ treatment, adjust = "tukey")
 ```{r}
 #| eval: false
 #Load and format code
-sur <- read.csv("Raw_data/Field Data/Mortality/mort_RT.csv")
+sur <- read.csv("mort_RT.csv")
 sur<-subset(sur, mortality!='missing') #remove 2 frags that went missing (glue detached)
 
 sur$treatment <- ifelse(sur$collection_site == "False Caye" & sur$transplant_site == "False Caye", "NS Native",
@@ -1257,22 +1276,21 @@ summary(ssid.PH)
 
 #Graph plot of mortality by species, transplant treatment, and time point  
 treat = c("NS Native", "OS Native", "Transplant to NS", "Transplant to OS") # for treatment order
-color = c("#ff6045", "#1e1175", "#008eff", "#98131d") # for colours 
+color = c("#E18A2A", "#384B6B", "#384B6B", "#E18A2A") # for colours 
 size=c(12,9,4,4) #run for SSID plot
 size=c(16,12,6,3) #run for PSTR plot
 
 #P. strigosa
-plot(pstr.out, col=color, xaxt="n", lwd=size, xlab="Months after start of experiment", 
-     ylab="Fraction Surviving", main="PSTR survival by transplant site") 
+plot(pstr.out, col=color, xaxt="n", lwd=3, lty = c(1,1,2,2), xlab="Months after start of experiment", ylab="Fraction Surviving") 
 axis(side=1, at=c(0,3,9,17, 60)) # add x axis label for time points
-legend("bottomleft", col=color, lty=1, legend=treat, lwd=size, bty="n") # add legend
-legend("bottom", legend=c("p < 0.01"), bty = "n")
+legend("bottomleft", col=color, lty=c(1,1,2,2), legend=treat, lwd=3, bty="n") # add legend
+legend("bottomright", legend=c("p < 0.01"), bty = "n")
 
 #S. siderea
-plot(ssid.out, col=color, xaxt="n", lwd=size, xlab="Months after start of experiment", ylab="Fraction Surviving", main="SSID survival by transplant site") 
+plot(ssid.out, col=color, xaxt="n", lwd=3, lty = c(1,1,2,2), xlab="Months after start of experiment", ylab="Fraction Surviving") 
 axis(side=1, at=c(0,3,9,17, 60)) # add x axis label for time points
-legend("bottomleft", col=color, lty=1, legend=treat, lwd=size, bty="n") # add legend
-legend("bottom", legend=c("p < 0.01"), bty = "n")
+legend("bottomleft", col=color, lty=c(1,1,2,2), legend=treat, lwd=3, bty="n") # add legend
+legend("bottomright", legend=c("p < 0.01"), bty = "n")
 
 ```
 
@@ -1395,6 +1413,36 @@ legend("bottom", legend=c("p < 0.01"), bty = "n", cex = 2)
 
 ```
 
+```{r CBB surv figures}
+
+# Save as PDF
+#pdf("Final_figures/survival_Fig_Sep_17_26.pdf", width = 10, height = 4.5)
+png("Final_figures/survival_Fig_Sep_17_26.png", width = 10, height = 4.5, unit = "in", res = 300)
+
+par(mfrow = c(1, 2))  # 1 row, 2 columns
+
+# --- Panel A: S. siderea ---
+plot(ssid.out, col = color, xaxt = "n", lwd = 3, lty = c(1, 1, 2, 2),
+     xlab = "Months after start of experiment",
+     ylab = "Fraction Surviving",
+     main = "A)  S. siderea survival")
+axis(side = 1, at = c(0, 3, 9, 17, 60))
+legend("bottomleft", col = color, lty = c(1, 1, 2, 2), legend = treat, lwd = 3, bty = "n")
+legend("bottomright", legend = c("p < 0.01"), bty = "n")
+
+# --- Panel B: P. strigosa ---
+plot(pstr.out, col = color, xaxt = "n", lwd = 3, lty = c(1, 1, 2, 2),
+     xlab = "Months after start of experiment",
+     ylab = "Fraction Surviving",
+     main = "B)  P. strigosa survival")
+axis(side = 1, at = c(0, 3, 9, 17, 60))
+legend("bottomleft", col = color, lty = c(1, 1, 2, 2), legend = treat, lwd = 3, bty = "n")
+legend("bottomright", legend = c("p = 0.94"), bty = "n")
+
+dev.off()  # close and save the file
+
+```
+
 
 ## Statistical analysis
 
@@ -1492,8 +1540,8 @@ b_4 #-795.9618
 #Now we can have R calculate the protein concentration for each coral sample! Add these standard linear equation values into new columns in a dataframe of ONLY samples to calculate protein concentrations. 
 protein_samples<-filter(compiled_protein_assay_data, protein_source=='sample')
 
-protein_samples$m<- ifelse(protein_samples$plate_number==3, 2247.697, 1976.897)
-protein_samples$b<- ifelse(protein_samples$plate_number==3, -834.2771, -795.9618)
+protein_samples$m<- ifelse(protein_samples$plate_number==3, m_3, m_4)
+protein_samples$b<- ifelse(protein_samples$plate_number==3, b_3, b_4)
 protein_samples$calc_conc_ug_ml<- protein_samples$m * protein_samples$absorbance_595 + protein_samples$b
 
     # PROTEIN SAMPLE REDOS -- 5 of our samples either had 1 negative calculated protein concentration value from the above analysis or had all 3 replicates with negative values.  
@@ -1514,7 +1562,7 @@ redo_bsa_standard_curve <- ggplot(data=protein_redo_standards, aes(x=absorbance_
 
 #Remove the weird values from redo standards 
     #BSA_750 rep 3, BSA_2000 all reps
-protein_redo_standards<-redo_standards[-c(21,25,26,27),]
+protein_redo_standards<-protein_redo_standards[-c(21,25,26,27),]
 
 sum_5<-summary(lm(concentration_ug_ml ~ absorbance_595, data=protein_redo_standards))
 R2_5 <- summary(lm(concentration_ug_ml ~ absorbance_595, data=protein_redo_standards))$r.squared
@@ -1525,8 +1573,8 @@ m_5 #953.964
 b_5 #-374.905
 
 protein_redo_samples<-filter(protein_redos_compiled_data, protein_source=='sample')
-protein_redo_samples$m<- (953.964)
-protein_redo_samples$b<- (-374.905)
+protein_redo_samples$m<- m_5
+protein_redo_samples$b<- b_5
 protein_redo_samples$calc_conc_ug_ml<- protein_redo_samples$m * protein_redo_samples$absorbance_595 + protein_redo_samples$b
 
 #Combine the protein samples and the redo protein samples 
@@ -1547,10 +1595,27 @@ final_protein2<-merge(df_final_protein2, energy_starting_volume, by="sample_ID")
 
 protein_abs_means<- final_protein2 %>%
   group_by(sample_ID) %>%
-  summarise(meanabsor=mean(absorbance_595), sd=sd(absorbance_595), n=n(), se=sd/sqrt(n), meanvol=mean(total_tissue_slurry_volume_ml), m=mean(m), b=mean(b))
+  summarise(mean_pro=mean(calc_conc_ug_ml), 
+            sd=sd(calc_conc_ug_ml), 
+            n=n(), 
+            se=sd/sqrt(n), 
+            meanvol=mean(total_tissue_slurry_volume_ml), 
+            m=mean(m), 
+            b=mean(b))
 
-protein_abs_means$calc_conc_ug_ml<- protein_abs_means$m * protein_abs_means$meanabsor + protein_abs_means$b
-protein_abs_means$final_protein_ug<- protein_abs_means$calc_conc_ug_ml * protein_abs_means$meanvol 
+
+# protein_abs_means<- final_protein2 %>%
+#   group_by(sample_ID) %>%
+#   summarise(meanabsor=mean(absorbance_595), 
+#             sd=sd(absorbance_595), 
+#             n=n(), 
+#             se=sd/sqrt(n), 
+#             meanvol=mean(total_tissue_slurry_volume_ml), 
+#             m=mean(m), 
+#             b=mean(b))
+
+#protein_abs_means$calc_conc_ug_ml2<- protein_abs_means$m * protein_abs_means$meanabsor + protein_abs_means$b
+protein_abs_means$final_protein_ug<- protein_abs_means$mean_pro * protein_abs_means$meanvol 
 
   #converting from ug to mg for direct comparsion to Baumann et al. 2021
 protein_abs_means$final_protein_mg<- protein_abs_means$final_protein_ug / 1000
@@ -1630,10 +1695,15 @@ Protein_BM_mean_plot_data <- protein_mg_mg_treatments_noNA %>%
   group_by(species, treatment, transplant_envir, home_envir) %>%
   summarise(mean=mean(protein_mg_mg), sd=sd(protein_mg_mg), n=n(), se=sd/sqrt(n))
 
-#Graph plot of protein by species and transplant treatment 
-pd = position_dodge(width = 0.3)
 
-Protein_Fig <- ggplot(Protein_BM_mean_plot_data, 
+## CBB edit: what you were trying above:
+Protein_BM_mean_plot_data$species <- factor(Protein_BM_mean_plot_data$species, levels = c("SSID","PSTR"))
+protein_mg_mg_treatments_noNA$species <- factor(protein_mg_mg_treatments_noNA$species, levels = c("SSID","PSTR"))
+
+
+#Graph plot of protein by species and transplant treatment 
+
+Protein_Fig <- ggplot(Protein_BM_mean_plot_data %>% drop_na(), 
        aes(x=treatment, y=mean, color=species))+
   geom_point(data=protein_mg_mg_treatments_noNA, 
              aes(x=treatment, y=protein_mg_mg, color=species), 
@@ -1654,11 +1724,31 @@ Protein_Fig <- ggplot(Protein_BM_mean_plot_data,
   ylab("Mean [protein] (mg/mg)")+
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
 
+
+Protein_Fig2 <- ggplot(data = Protein_BM_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=mean, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=mean-se, ymax=mean+se), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = protein_mg_mg_treatments_noNA, aes(x=transplant_envir, y=protein_mg_mg), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("NS", "OS")) +
+  scale_x_discrete(labels = c("NS", "OS")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Native Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Mean [protein] (mg/mg)")
+
+
 # save image as a .jpeg
-ggsave("Protein_Fig_Sep_12_26.jpg", plot=Protein_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Protein_Fig_Sep_17_26.jpg", plot=Protein_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data (no NAs in transplant treatment) for statistical analysis 
-write_csv(protein_mg_mg_treatments_noNA, file="Cleaned_data/protein_noNA_data.csv")
+#write_csv(protein_mg_mg_treatments_noNA, file="Cleaned_data/protein_noNA_data.csv")
 
 ```
 
@@ -1772,8 +1862,8 @@ b_cplate5 #-0.191055
 #Now we can have R calculate the carbohydrate concentration for each coral sample! Add these standard linear equation values into new columns in a dataframe of ONLY samples to calculate carbohydrate concentrations. 
 carb_samples<-filter(Carb_data, carb_source=='sample')
 carb_samples$dilution<-(0.1)
-carb_samples$m<- ifelse(carb_samples$plate_number==4, 0.867211, 0.809757)
-carb_samples$b<- ifelse(carb_samples$plate_number==4, -0.211298, -0.191055)
+carb_samples$m<- ifelse(carb_samples$plate_number==4, m_cplate4, m_cplate5)
+carb_samples$b<- ifelse(carb_samples$plate_number==4, b_cplate4, b_cplate5)
 
 #Also some coral samples required a rerun in the spectrometer. Therefore some sample replicates (with abosorbance values over those of the maximum concentration standards) were removed and added from their "redo" plate results. 
 redo_carb_data <- read_csv("Raw_data/Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_redo_data.csv", col_types = cols(plate_number = col_character(), column = col_character(), replicate = col_character(), absorbance_485 = col_number(), concentration_mg_ml = col_number()))
@@ -1797,8 +1887,8 @@ m_cplate6 #0.920258
 b_cplate6 #-0.24104
 
 redo_carb_samples<-filter(redo_carb_data, carb_source=='sample')
-redo_carb_samples$m<- (0.920258)
-redo_carb_samples$b<- (-0.241039)
+redo_carb_samples$m<- R2_cplate6
+redo_carb_samples$b<- b_cplate6
 
 #Combine the carb samples and the redo carb samples 
 
@@ -1836,7 +1926,7 @@ BM_measurements <- read_csv("Raw_data/Lab Data/backcalcs/BM_measurements.csv",
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
 carb_bm_analysis<-merge(carb_abs_means, BM_measurements, by="sample_ID")
 
-carb_bm_analysis$carb_mg_mg<- carb_bm_analysis$final_carb_mg / (carb_bm_analysis$total_dry_weight_mg)
+carb_bm_analysis$carb_mg_mg<- (carb_bm_analysis$final_carb_mg / (carb_bm_analysis$total_dry_weight_g*1000))
 
 #Raw data
 samples_treatments <- read_csv("Raw_data/Lab Data/backcalcs/samples_treatments.csv")
@@ -1900,8 +1990,12 @@ Carbs_BM_mean_plot_data <- carb_mgmg_treatments_noNA %>%
   summarise(mean=mean(carb_mg_mg), sd=sd(carb_mg_mg), n=n(), se=sd/sqrt(n))
 #View(Carbs_BM_mean_plot_data)
 
+
+## CBB edit: what you were trying above:
+Carbs_BM_mean_plot_data$species <- factor(Carbs_BM_mean_plot_data$species, levels = c("SSID","PSTR"))
+carb_mgmg_treatments_noNA$species <- factor(carb_mgmg_treatments_noNA$species, levels = c("SSID","PSTR"))
+
 #Graph plot of carbohydrates by species and transplant treatment 
-pd = position_dodge(width = 0.3)
 
 Carbs_Fig <- ggplot(Carbs_BM_mean_plot_data, 
                         aes(x=treatment, y=mean, color=species))+
@@ -1924,11 +2018,34 @@ Carbs_Fig <- ggplot(Carbs_BM_mean_plot_data,
   ylab("Mean [carbohydrate] (mg/mg)")+
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
 
+
+
+
+Carbs_Fig2 <- ggplot(data = Carbs_BM_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=mean, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=mean-se, ymax=mean+se), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = carb_mgmg_treatments_noNA, aes(x=transplant_envir, y=carb_mg_mg), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("NS", "OS")) +
+  scale_x_discrete(labels = c("NS", "OS")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Native Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Mean [carbohydrate] (mg/mg)")
+
+
+
 # save image as a .jpeg
-ggsave("Carb_Fig_Sep_12_26.jpg", plot=Carbs_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Carb_Fig_Sep_17_26.jpg", plot=Carbs_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data (w/no NA for treatment) for statistical analysis 
-write_csv(carb_mgmg_treatments_noNA, file="Cleaned_data/carbs_noNA_data.csv")
+#write_csv(carb_mgmg_treatments_noNA, file="Cleaned_data/carbs_noNA_data.csv")
 ```
 
 
@@ -2044,8 +2161,8 @@ b_lplate2 #0.009980
 #Now we can have R calculate the lipid concentration for each coral sample! Add these standard linear equation values into new columns in a dataframe of samples to estimate lipid concentration
 lipid_samples<-filter(Lipid_data, lipid_source=='sample') 
 lipid_samples$dilution<-(1360/600)
-lipid_samples$m<- ifelse(lipid_samples$plate_number==1, 1.7596, 1.34222) 
-lipid_samples$b<- ifelse(lipid_samples$plate_number==1, -0.019183, 0.009980)
+lipid_samples$m<- ifelse(lipid_samples$plate_number==1, m_lplate1, m_lplate2) 
+lipid_samples$b<- ifelse(lipid_samples$plate_number==1, b_lplate1, b_lplate2)
 
 #Prepare sample data for graphing
 #Accounting for volume of tissue slurry in calculated carbohydrate concentrations
@@ -2071,7 +2188,7 @@ BM_measurements <- read_csv("Raw_data/Lab Data/backcalcs/BM_measurements.csv",
 lipid_bm_analysis<-merge(lipid_abs_means, BM_measurements, by="sample_ID")
 
 #calculate concentration mg/mg
-lipid_bm_analysis$lipid_mg_mg<- lipid_bm_analysis$final_lipid_mg / (lipid_bm_analysis$total_dry_weight_mg)
+lipid_bm_analysis$lipid_mg_mg<- lipid_bm_analysis$final_lipid_mg / (lipid_bm_analysis$total_dry_weight_g*1000)
 
   #assign treatments to samples
 samples_treatments <- read_csv("Raw_data/Lab Data/backcalcs/samples_treatments.csv")
@@ -2132,8 +2249,12 @@ Lipids_BM_mean_plot_data <- lipid_mgmg_treatments_noNA %>%
   summarise(mean=mean(lipid_mg_mg), sd=sd(lipid_mg_mg), n=n(), se=sd/sqrt(n))
 #View(Lipids_BM_mean_plot_data)
 
+## CBB edit: what you were trying above:
+Lipids_BM_mean_plot_data$species <- factor(Lipids_BM_mean_plot_data$species, levels = c("SSID","PSTR"))
+lipid_mgmg_treatments_noNA$species <- factor(lipid_mgmg_treatments_noNA$species, levels = c("SSID","PSTR"))
+
+
 #Graph plot of carbohydrates by species and transplant treatment 
-pd = position_dodge(width = 0.3)
 
 Lipids_Fig <- ggplot(Lipids_BM_mean_plot_data, 
        aes(x=treatment, y=mean, color=species))+
@@ -2156,11 +2277,33 @@ Lipids_Fig <- ggplot(Lipids_BM_mean_plot_data,
   ylab("Mean [lipid] (mg/mg)")+
   scale_color_manual(labels=c('P. strigosa', 'S. siderea'), values = c("#384B6B", "#E18A2A"))
 
+
+
+
+
+Lipids_Fig2 <- ggplot(data = Lipids_BM_mean_plot_data %>% drop_na(), aes(x = transplant_envir, y=mean, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=mean-se, ymax=mean+se), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = lipid_mgmg_treatments_noNA, aes(x=transplant_envir, y=lipid_mg_mg), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales='free_x', labeller = labeller(species = c("SSID" = "S. siderea", "PSTR" = "P. strigosa"))) +
+  scale_color_manual(values = c("#E18A2A", "#384B6B"), labels=c("NS", "OS")) +
+  scale_x_discrete(labels = c("NS", "OS")) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = "italic")) +  # make text in facet title larger & italic
+  guides(color = guide_legend(title = "Native Environment")) + 
+  xlab("Transplant Environment") +
+  ylab("Mean [lipid] (mg/mg)")
+
 # save image as a .jpeg
-ggsave("Lipid_Fig_Sep_12_26.jpg", plot=Lipids_Fig, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
+ggsave("Lipid_Fig_Sep_17_26.jpg", plot=Lipids_Fig2, path="Final_figures", width = 10, height = 5, units = "in", dpi = 600)
 
 #Save graphed raw data for statistical analysis 
-write_csv(lipid_mgmg_treatments_noNA, file="Cleaned_data/lipid_noNA_data.csv")
+#write_csv(lipid_mgmg_treatments_noNA, file="Cleaned_data/lipid_noNA_data.csv")
 ```
 
 
