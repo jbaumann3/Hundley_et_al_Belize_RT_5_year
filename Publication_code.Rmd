@@ -61,7 +61,6 @@ We also used a RADseq pipeline in an attempt to identify corals that initially h
 ## Load data and organize
 
 ```{r}
-#| eval: false 
 
 # navigate to directory with the data
 #setwd("~/Raw_data/Field Data/PAM")
@@ -413,7 +412,7 @@ emmeans(PSTR_pam_lm_trt, pairwise ~ treatment, adjust = "tukey")
 ## Load data and organize 
 
 ```{r}
-#| eval: false
+
 #Load data and format code
 #Chlorophyll data
 chlorophyll_data <- read_csv("Raw_data/Lab Data/Chloropyll/chlorophyll_data.csv", 
@@ -678,7 +677,7 @@ stats_chla
 
 # just renaming to make it shorter
 chla_df <- chl_ugcm2_treatments_noNA %>% 
-  mutate(across(c(17:20), as.factor)) %>% # convert several columns to factors
+  mutate(across(c(19:22), as.factor)) %>% # convert several columns to factors
   mutate(colony_ID = str_extract(sample_ID, "[0-9]")) # need to add colony ID for random effects
 
 
@@ -912,7 +911,7 @@ emmeans(PSTR_chlc2_lm_simple, pairwise ~ treatment, adjust = "tukey")
 ## Load data and organize
 
 ```{r}
-#| eval: false
+
 #Load and format code
 all_corals_and_TPs <- read_csv("Raw_data/Field Data/BW/all_corals_and_TPs.csv", 
                                col_types = cols(mortality = col_character(), 
@@ -1044,7 +1043,6 @@ BW_Change_Fig <- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatmen
 
 ```{r CBB BW plot edit}
 
-
 bw_mean_df <- BW_timepointcomparison_means %>% 
   mutate(treat = treatment) %>% 
   mutate(treat = gsub("NS Native", "NS_NS", treat),
@@ -1052,6 +1050,10 @@ bw_mean_df <- BW_timepointcomparison_means %>%
          treat = gsub("Transplant to NS", "OS_NS", treat),
          treat = gsub("Transplant to OS", "NS_OS", treat)) %>% 
   separate(treat, c("nat_env", "tran_env"))
+
+## CBB edit: what you were trying above:
+bw_mean_df$species <- factor(bw_mean_df$species, levels = c("SSID","PSTR"))
+long_alive_corals2$species <- factor(long_alive_corals2$species, levels = c("SSID","PSTR"))
 
 
 BW_Change_Fig2 <- ggplot(data = bw_mean_df %>% filter(timepoint_comparison == "T0_T3" | timepoint_comparison == "T0_T4" & n >= 2), aes(x = factor(treatment, level=c('NS Native', 'Transplant to OS', 'OS Native', 'Transplant to NS')), y=meanchange, color = timepoint_comparison)) +
@@ -1106,7 +1108,7 @@ ggsave("BWChange_Fig_Sep_17_26.jpg", plot=BW_Change_Fig3, path="Final_figures", 
 ## Statistical analysis
 
 ```{r}
-#| eval: false
+
 #Load data 
 #longcoral<-read_csv('long_alive_corals.csv')
 longcoral$species<-ifelse(grepl("PSTR", longcoral$coral_ID), "PSTR", "SSID")
@@ -1247,7 +1249,7 @@ emmeans(PSTR_bw_lm_simple, pairwise ~ treatment, adjust = "tukey")
 ## Load data and organize
 
 ```{r}
-#| eval: false
+
 #Load and format code
 sur <- read.csv("mort_RT.csv")
 sur<-subset(sur, mortality!='missing') #remove 2 frags that went missing (glue detached)
@@ -1491,7 +1493,7 @@ mortality_ssid <-sur_ssid %>%
 ## Load data and organize
 
 ```{r}
-#| eval: false
+
 #Load and format code
 compiled_protein_assay_data <- read_csv("Raw_data/Lab Data/Proteins/compiled_protein_assay_data.csv", 
                                         col_types = cols(plate_number = col_character(), 
@@ -1755,7 +1757,7 @@ ggsave("Protein_Fig_Sep_17_26.jpg", plot=Protein_Fig2, path="Final_figures", wid
 ## Statistical analysis for proteins backcalculated to biomass (mg/mg)
 
 ```{r}
-#| eval: false
+
 #Load data 
 protein_bm_data <- read_csv("Cleaned_data/protein_noNA_data.csv",
                             col_types = cols(protein_mg_mg = col_number()))
@@ -1812,13 +1814,102 @@ stats_proteins <-protein_bm_data %>%
 stats_proteins
 ```
 
+```{r CBB protein stats}
+
+# just renaming to make it shorter
+pro_df <- protein_mg_mg_treatments_noNA %>% 
+  mutate(colony_ID = factor(str_extract(sample_ID, "[0-9]"))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only protein stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_pro <- subset(pro_df, species == "SSID")
+
+
+# visual inspection of distribution (density + histogram): not terrible
+ggplot(SSID_pro, aes(x = protein_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_pro, aes(sample = protein_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_pro_lm <- lmer(protein_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_pro)
+check_model(SSID_pro_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_pro_lm_trt <- lmer(protein_mg_mg ~ treatment + (1 | colony_ID), data = SSID_pro)
+compare_performance(SSID_pro_lm, SSID_pro_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for RE model and it is more biologically appropriate
+SSID_pro_lm_simple <- lm(protein_mg_mg ~ treatment, data = SSID_pro)
+AIC(SSID_pro_lm, SSID_pro_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_pro_lm_trt)
+anova(SSID_pro_lm_trt) 
+emmeans(SSID_pro_lm_trt, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID protein model: SSID_pro_lm_trt <- lmer(protein_mg_mg ~ treatment + (1 | colony_ID), data = SSID_pro)
+
+
+
+# ------------- PSTR-only protein stats
+
+# selecing for PSTR only:
+PSTR_pro <- subset(pro_df, species != "SSID") %>% 
+  filter(treatment != "Transplant to NS") # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): okay
+ggplot(PSTR_pro, aes(x = protein_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_pro, aes(sample = protein_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_protein_lm <- lmer(protein_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_pro)
+check_model(PSTR_protein_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_protein_lm_trt <- lmer(protein_mg_mg ~ treatment + (1 | colony_ID), data = PSTR_pro)
+compare_performance(PSTR_protein_lm, PSTR_protein_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_protein_lm_simple <- lm(protein_mg_mg ~ treatment, data = PSTR_pro)
+AIC(PSTR_protein_lm, PSTR_protein_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_protein_lm_simple)
+anova(PSTR_protein_lm_simple) 
+emmeans(PSTR_protein_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR protein model: PSTR_protein_lm_simple <- lm(protein_mg_mg ~ treatment, data = PSTR_pro)
+
+```
+
+
 
 # Carbohydrates
 
 ## Load data and organize
 
 ```{r}
-#| eval: false
+
 #Load and format code
 Carb_data <- read_csv("Raw_data/Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_assay_data.csv", 
                       col_types = cols(plate_number = col_character(), 
@@ -2052,7 +2143,7 @@ ggsave("Carb_Fig_Sep_17_26.jpg", plot=Carbs_Fig2, path="Final_figures", width = 
 ## Statistical analysis
 
 ```{r}
-#| eval: false
+
 #Load data 
 carbs_bm_data <- read_csv("Cleaned_data/carbs_noNA_data.csv",
                             col_types = cols(carb_mg_mg = col_number()))
@@ -2111,12 +2202,105 @@ stats_carbs
 ```
 
 
+```{r CBB carbs stats}
+
+# just renaming to make it shorter
+carb_df <- carb_mgmg_treatments_noNA %>% 
+  mutate(colony_ID = factor(str_extract(sample_ID, "[0-9]"))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only carbs stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_carb <- subset(carb_df, species == "SSID")
+
+
+# visual inspection of distribution (density + histogram): not terrible
+ggplot(SSID_carb, aes(x = carb_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 12) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_carb, aes(sample = carb_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_carb_lm <- lmer(carb_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_carb)
+check_model(SSID_carb_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# throwing singular fit so need to do simple LM
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_carb_lm_trt <- lmer(carb_mg_mg ~ treatment + (1 | colony_ID), data = SSID_carb)
+compare_performance(SSID_carb_lm, SSID_carb_lm_trt)
+# still singular
+
+## Exploring simple vs random effect model: 
+# Singular fit from RE so just doing simple LM
+SSID_carb_lm_simple <- lm(carb_mg_mg ~ treatment, data = SSID_carb)
+AIC(SSID_carb_lm, SSID_carb_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_carb_lm_simple)
+anova(SSID_carb_lm_simple) 
+emmeans(SSID_carb_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID carbs model: SSID_carb_lm_simple <- lm(carb_mg_mg ~ treatment, data = SSID_carb)
+
+
+
+# ------------- PSTR-only carbs stats
+
+# selecing for PSTR only:
+PSTR_carb <- subset(carb_df, species != "SSID") %>% 
+  filter(treatment != "Transplant to NS") # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_carb, aes(x = carb_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_carb, aes(sample = carb_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_carb_lm <- lmer(carb_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_carb)
+check_model(PSTR_carb_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# singular fit
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_carb_lm_trt <- lmer(carb_mg_mg ~ treatment + (1 | colony_ID), data = PSTR_carb)
+compare_performance(PSTR_carb_lm, PSTR_carb_lm_trt)
+# still singular fit
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple and singular fit for RE
+PSTR_carb_lm_simple <- lm(carb_mg_mg ~ treatment, data = PSTR_carb)
+AIC(PSTR_carb_lm, PSTR_carb_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_carb_lm_simple)
+anova(PSTR_carb_lm_simple) 
+emmeans(PSTR_carb_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR carbs model: PSTR_carb_lm_simple <- lm(carb_mg_mg ~ treatment, data = PSTR_carb)
+
+```
+
+
 # Lipids
 
 ## Load data and organize
 
 ```{r}
-#| eval: false
+
 #Load data set
 
 Lipid_data <- read_csv("Raw_data/Lab Data/Lipids/compiled_lipid_data.csv", 
@@ -2310,7 +2494,7 @@ ggsave("Lipid_Fig_Sep_17_26.jpg", plot=Lipids_Fig2, path="Final_figures", width 
 ## Statistical analysis
 
 ```{r}
-#| eval: false
+
 #Load data 
 lipids_bm_data <- read_csv("Cleaned_data/lipid_noNA_data.csv",
                             col_types = cols(lipid_mg_mg = col_number()))
@@ -2367,5 +2551,248 @@ stats_lipids <-lipids_bm_data %>%
           count = n(),
           mean_carbs = mean(lipid_mg_mg))
 stats_lipids
+```
+
+
+
+```{r CBB lipid stats}
+
+# just renaming to make it shorter
+lipid_df <- lipid_mgmg_treatments_noNA %>% 
+  mutate(colony_ID = factor(str_extract(sample_ID, "[0-9]"))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only lipid stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_lipid <- subset(lipid_df, species == "SSID")
+
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_lipid, aes(x = lipid_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 12) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_lipid, aes(sample = lipid_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = "coral")
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_lipid_lm <- lmer(lipid_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_lipid)
+check_model(SSID_lipid_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# throwing singular fit so need to do simple LM
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_lipid_lm_trt <- lmer(lipid_mg_mg ~ treatment + (1 | colony_ID), data = SSID_lipid)
+compare_performance(SSID_lipid_lm, SSID_lipid_lm_trt)
+# still singular
+
+## Exploring simple vs random effect model: 
+# Singular fit from RE so just doing simple LM
+SSID_lipid_lm_simple <- lm(lipid_mg_mg ~ treatment, data = SSID_lipid)
+AIC(SSID_lipid_lm, SSID_lipid_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_lipid_lm_simple)
+anova(SSID_lipid_lm_simple) 
+emmeans(SSID_lipid_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final SSID lipid model: SSID_lipid_lm_simple <- lm(lipid_mg_mg ~ treatment, data = SSID_lipid)
+
+
+
+# ------------- PSTR-only lipid stats
+
+# selecing for PSTR only:
+PSTR_lipid <- subset(lipid_df, species != "SSID") %>% 
+  filter(treatment != "Transplant to NS") # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_lipid, aes(x = lipid_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_lipid, aes(sample = lipid_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = "coral") 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_lipid_lm <- lmer(lipid_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_lipid)
+check_model(PSTR_lipid_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# singular fit
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_lipid_lm_trt <- lmer(lipid_mg_mg ~ treatment + (1 | colony_ID), data = PSTR_lipid)
+compare_performance(PSTR_lipid_lm, PSTR_lipid_lm_trt)
+# still singular fit
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple and singular fit for RE
+PSTR_lipid_lm_simple <- lm(lipid_mg_mg ~ treatment, data = PSTR_lipid)
+AIC(PSTR_lipid_lm, PSTR_lipid_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_lipid_lm_simple)
+anova(PSTR_lipid_lm_simple) 
+emmeans(PSTR_lipid_lm_simple, pairwise ~ treatment, adjust = "tukey")
+
+## Final PSTR lipid model: PSTR_lipid_lm_simple <- lm(lipid_mg_mg ~ treatment, data = PSTR_lipid)
+
+```
+
+
+
+
+## Saving stats tables in word docs
+This isn't pretty, but it will do for now!
+```{r}
+
+# Install and load
+library(modelsummary)
+library(tinytable)
+library(flextable)
+
+
+## all SSID params
+
+# Put models in a named list for clean column headers
+SSID_models_list <- list("Calcification" = SSID_bw_lm_trt,
+                         "Fv/Fm" = SSID_pam_lm_trt, 
+                         "Protein" = SSID_pro_lm_trt, 
+                         "Lipid" = SSID_lipid_lm_simple, 
+                         "Carbs" = SSID_carb_lm_simple,
+                         "Chl a" = SSID_chla_lm_simple, 
+                         "Chl c" = SSID_chlc2_lm_simple
+                         )
+
+# Generate a publication-ready table (SSID only)
+modelsummary(SSID_models_list, 
+             output = "Tables/SSID_model_summary.docx",
+             stars = TRUE,            
+             gof_omit = "AIC|BIC|ICC|Log.Lik.|RMSE",
+             coef_rename = c(
+               "(Intercept)" = "Intercept (NS Native)",
+               "treatmentOS Native" = "OS Native",
+               "treatmentTransplant to NS" = "Transplant to NS",
+               "treatmentTransplant to OS" = "Transplant to OS")
+             ) %>% 
+  group_tt(j = list(`Mixed Effects Model` = 2:4, `Linear Model` = 5:8))
+
+
+
+SSID_contrasts <- lapply(names(SSID_models_list), function(param) {
+  emm <- emmeans(SSID_models_list[[param]], pairwise ~ treatment, adjust = "tukey")
+  as.data.frame(emm$contrasts) %>%
+    mutate(parameter = param)
+}) %>%
+  bind_rows() %>%
+  # add significance stars
+  mutate(
+    stars = case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01  ~ "**",
+      p.value < 0.05  ~ "*",
+      p.value < 0.1   ~ ".",
+      TRUE            ~ ""
+    ),
+    # round numeric columns
+    across(where(is.numeric), ~ round(., 3))
+  ) %>%
+  select(parameter, contrast, estimate, SE, df, p.value, stars)
+
+
+
+
+SSID_contrasts %>%
+  flextable() %>%
+  set_header_labels(
+    parameter = "Parameter",
+    contrast  = "Contrast",
+    estimate  = "Estimate",
+    SE        = "SE",
+    df        = "df",
+    p.value   = "p-value",
+    stars     = ""
+  ) %>%
+  merge_v(j = "parameter") %>%       # merge repeated parameter labels
+  valign(j = "parameter", valign = "top") %>%
+  theme_booktabs() %>%
+  autofit() %>%
+  save_as_docx(path = "Tables/SSID_emmeans_contrasts.docx")
+
+
+
+
+
+
+
+
+PSTR_models_list <- list("Fv/Fm" = PSTR_pam_lm_trt,
+                         "Calcification" = PSTR_bw_lm_simple,
+                         "Protein" = PSTR_bw_lm_simple, 
+                         "Lipid" = PSTR_lipid_lm_simple, 
+                         "Carbs" = PSTR_carb_lm_simple,
+                         "Chl a" = PSTR_chla_lm_simple, 
+                         "Chl c" = PSTR_chlc2_lm_simple
+                         )
+
+# Generate a publication-ready table (PSTR only)
+modelsummary(PSTR_models_list, 
+             output = "Tables/PSTR_model_summary.docx",
+             stars = TRUE,            
+             gof_omit = "AIC|BIC|ICC|Log.Lik.|RMSE",
+             coef_rename = c(
+               "(Intercept)" = "Intercept (NS Native)",
+               "treatmentOS Native" = "OS Native",
+               "treatmentTransplant to NS" = "Transplant to NS",
+               "treatmentTransplant to OS" = "Transplant to OS")
+) %>% 
+  group_tt(j = list(`Mixed Effects Model` = 2, `Linear Model` = 3:8))
+
+
+
+PSTR_contrasts <- lapply(names(PSTR_models_list), function(param) {
+  emm <- emmeans(PSTR_models_list[[param]], pairwise ~ treatment, adjust = "tukey")
+  as.data.frame(emm$contrasts) %>%
+    mutate(parameter = param)
+}) %>%
+  bind_rows() %>%
+  mutate(
+    stars = case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01  ~ "**",
+      p.value < 0.05  ~ "*",
+      p.value < 0.1   ~ ".",
+      TRUE            ~ ""
+    ),
+    across(where(is.numeric), ~ round(., 3))
+  ) %>%
+  select(parameter, contrast, estimate, SE, df, p.value, stars)
+
+PSTR_contrasts %>%
+  flextable() %>%
+  set_header_labels(
+    parameter = "Parameter",
+    contrast  = "Contrast",
+    estimate  = "Estimate",
+    SE        = "SE",
+    df        = "df",
+    p.value   = "p-value",
+    stars     = ""
+  ) %>%
+  merge_v(j = "parameter") %>%
+  valign(j = "parameter", valign = "top") %>%
+  theme_booktabs() %>%
+  autofit() %>%
+  save_as_docx(path = "Tables/PSTR_emmeans_contrasts.docx")
+
+
 ```
 

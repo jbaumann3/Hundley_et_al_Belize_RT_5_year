@@ -372,7 +372,13 @@ library(car)
 library(tidyr)
 library(dplyr)
 library(survminer)
-library(writexl)</code></pre>
+library(writexl)
+
+## Colleen added:
+library(performance)
+library(lme4)
+library(lmerTest)
+library(emmeans)</code></pre>
 <p></p>
 <p>This <strong>R markdown document</strong> outlines the data sets and
 codes used to create all the figures and run statistics published in the
@@ -400,11 +406,11 @@ column in the initial/raw datasheets (<code>FvFm_All_corals.csv</code>,
 <h2>Load data and organize</h2>
 <p></p>
 <pre class="r"><code># navigate to directory with the data
-setwd(&quot;~/Field Data/PAM&quot;)
+#setwd(&quot;~/Raw_data/Field Data/PAM&quot;)
 
 #Load and format code
 
-FvFm_data_All_corals &lt;- read_csv(&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Field Data/PAM/FvFm_All_corals.csv&quot;, 
+FvFm_data_All_corals &lt;- read_csv(&quot;Raw_data/Field Data/PAM/FvFm_All_corals.csv&quot;, 
                             col_types = cols(Fo_1 = col_number(), 
                                              Fm_1 = col_number(), Fv_1 = col_number(), 
                                              FvFm1 = col_number(), Fo_2 = col_number(), 
@@ -412,7 +418,15 @@ FvFm_data_All_corals &lt;- read_csv(&quot;~/Desktop/Desktop - Callie’s MacBook
                                              FvFm2 = col_number(), Fo_3 = col_number(), 
                                              Fm_3 = col_number(), Fv_3 = col_number(), 
                                              FvFm3 = col_number()))
-View(FvFm_data_All_corals)
+#FvFm_data_All_corals &lt;- read_csv(&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Field Data/PAM/FvFm_All_corals.csv&quot;, 
+#                            col_types = cols(Fo_1 = col_number(), 
+#                                             Fm_1 = col_number(), Fv_1 = col_number(), 
+#                                             FvFm1 = col_number(), Fo_2 = col_number(), 
+#                                             Fm_2 = col_number(), Fv_2 = col_number(), 
+#                                             FvFm2 = col_number(), Fo_3 = col_number(), 
+#                                             Fm_3 = col_number(), Fv_3 = col_number(), 
+#                                             FvFm3 = col_number()))
+#View(FvFm_data_All_corals)
 
 # reassign treatment name via new naming scheme 
 FvFm_data_All_corals$treatment &lt;-
@@ -438,7 +452,8 @@ FvFm_all_corals_no_NAs&lt;- FvFm_all_corals_no_NAs %&gt;%
 FvFm_all_corals_no_NAs&lt;- FvFm_all_corals_no_NAs %&gt;% 
   mutate(home_envir = ifelse(treatment == &quot;NS Native&quot; | treatment == &quot;Transplant to OS&quot;, 
                              &quot;Nearshore coral&quot;, &quot;Offshore coral&quot;))
-view(FvFm_all_corals_no_NAs)
+#View(FvFm_all_corals_no_NAs)
+
 
   #calculate an average FvFm value for each coral (one point/row for each coral)
 FvFm_all_coral_one_point_no_NAs &lt;- FvFm_all_corals_no_NAs |&gt; 
@@ -451,7 +466,7 @@ FvFm_all_coral_one_point_no_NAs &lt;- FvFm_all_corals_no_NAs |&gt;
 
 
 #Save raw data for records + statistical analysis 
-write_csv(FvFm_all_coral_one_point_no_NAs, file=&quot;~/Cleaned_data/FvFm_noNA_data.csv&quot;)
+write_csv(FvFm_all_coral_one_point_no_NAs, file=&quot;Cleaned_data/FvFm_noNA_data.csv&quot;)
 #write_xlsx(FvFm_all_coral_one_point_no_NAs, path=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/FvFm_noNA_data.xlsx&quot;)
 
 #=======Mean data (one point for each transplant treatment)=========
@@ -460,7 +475,7 @@ PAM_means_all_coral&lt;-FvFm_all_coral_one_point_no_NAs %&gt;%
   group_by(species, treatment) %&gt;%
   drop_na(avg_FvFm) %&gt;%
   summarize(meanFvFm=mean(avg_FvFm), sdFvFm=sd(avg_FvFm), n=n(), SEFvFm=(sdFvFm)/(sqrt(n)))
-view(PAM_means_all_coral)
+#View(PAM_means_all_coral)
 
   #removing nas
 PAM_means_no_NAs = subset(PAM_means_all_coral, treatment %in% c(&quot;NS Native&quot;,&quot;Transplant to NS&quot;, &quot;OS Native&quot;, &quot;Transplant to OS&quot;))
@@ -476,22 +491,28 @@ PAM_means_no_NAs&lt;- PAM_means_no_NAs %&gt;%
 <h2>Figure creation</h2>
 <p></p>
 <pre class="r"><code>#Graph plot of Fv/Fm by species and transplant treatment 
-pd = position_dodge(width = 0.3)
+pd = position_dodge(width = 0.2)
+pjd = position_jitterdodge(jitter.width = NULL, dodge.width = 0.2) #CBB: Updated this to jitter just to see points better
 
   # Trying and failing to make species a factor to change the order of my species in the legend
 #PAM_means_no_NAs$species_factor &lt;- factor(PAM_means_no_NAs$species, levels = c(&quot;SSID&quot;, &quot;PSTR&quot;))
 #PAM_means_no_NAs$species_relevel &lt;- relevel(PAM_means_no_NAs$species, ref = &quot;SSID&quot;)
-levels(PAM_means_no_NAs$species_factor) #returns: &quot;SSID&quot; &quot;PSTR&quot; 
+#levels(PAM_means_no_NAs$species) #returns: &quot;SSID&quot; &quot;PSTR&quot; 
+
+## CBB edit: what you were trying above:
+PAM_means_no_NAs$species &lt;- factor(PAM_means_no_NAs$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+FvFm_all_coral_one_point_no_NAs$species &lt;- factor(FvFm_all_coral_one_point_no_NAs$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+levels(PAM_means_no_NAs$species) # just lets you check the levels
 
 #PAM_means_no_NAs |&gt; 
   #mutate(species = factor(), levels = c(&#39;S. siderea&#39;, &#39;P. strigosa&#39;)) |&gt; 
 
-PAM_Fig &lt;- ggplot(data = PAM_means_no_NAs, aes(x= factor(treatment, levels = c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=meanFvFm, color = species)) +
+PAM_Fig &lt;- ggplot(data = PAM_means_no_NAs %&gt;% drop_na(), aes(x= factor(treatment, levels = c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=meanFvFm, color = species, group=species)) +
   geom_point(size=3, position=pd) +
-  geom_point(data = FvFm_all_coral_one_point_no_NAs, aes(x=treatment, y=avg_FvFm), position=pd, size=2.5, alpha=0.3) +
-  geom_line(aes(group=species), position=pd) +
+  geom_point(data = FvFm_all_coral_one_point_no_NAs, aes(x=treatment, y=avg_FvFm), position=pjd, size=2.5, alpha=0.3) +
+  geom_line(position=pd) +
   geom_errorbar(aes(x=treatment, ymin=meanFvFm-SEFvFm, ymax=meanFvFm+SEFvFm), 
-                width=0.2, size=1, position=pd) +
+                width=0.2, linewidth=1, position=pd) +
   facet_wrap(~home_envir, scales=&#39;free_x&#39;) + #THIS LINE ISN&#39;T WORKING
   theme_bw() + 
   theme(
@@ -503,19 +524,38 @@ PAM_Fig &lt;- ggplot(data = PAM_means_no_NAs, aes(x= factor(treatment, levels = 
   guides(color = guide_legend(title = &quot;Species&quot;)) + 
   xlab(&quot;Treatment&quot;) +
   ylab(&quot;Fv/Fm values&quot;) +
-  scale_color_manual(values = c(&quot;#384B6B&quot;, &quot;#E18A2A&quot;), labels=c(&#39;P. strigosa&#39;, &#39;S. siderea&#39;)) 
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&#39;S. siderea&#39;, &#39;P. strigosa&#39;)) 
+
+PAM_Fig2 &lt;- ggplot(data = PAM_means_no_NAs %&gt;% drop_na(), aes(x = transplant_envir, y=meanFvFm, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanFvFm-SEFvFm, ymax=meanFvFm+SEFvFm), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = FvFm_all_coral_one_point_no_NAs, aes(x=transplant_envir, y=avg_FvFm), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;NS&quot;, &quot;OS&quot;)) +
+  scale_x_discrete(labels = c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Native Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Fv/Fm values&quot;)
+
 
 # export graph as .jpg
-ggsave(&quot;PAM_Fig_Sep_12_26.jpg&quot;, plot=PAM_Fig, path=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)</code></pre>
+ggsave(&quot;PAM_Fig_Sep_17_26.jpg&quot;, plot=PAM_Fig2, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)</code></pre>
 <p></p>
 </div>
 <div id="statistical-analysis" class="section level2">
 <h2>Statistical analysis</h2>
 <p></p>
 <pre class="r"><code>#Load cleaned data 
-FvFm_data &lt;- read_csv(&quot;~/Cleaned_data/FvFm_noNA_data.csv&quot;, 
+FvFm_data &lt;- read_csv(&quot;Cleaned_data/FvFm_noNA_data.csv&quot;, 
                       col_types = cols(average_FvFm = col_number()))
-View(FvFm_data)
+#View(FvFm_data)
 
 #Test for normality
   # Using a Shapiro-wilk test, our null hypothesis is that the sample data is not significantly different from a normal distribution.
@@ -581,6 +621,126 @@ stats_FvFm &lt;-FvFm_data %&gt;%
           mean_FvFm = mean(avg_FvFm))
 stats_FvFm</code></pre>
 <p></p>
+<p></p>
+<pre class="r"><code># just renaming to make it shorter
+pam_df &lt;- FvFm_all_coral_one_point_no_NAs %&gt;% 
+  mutate(across(c(2:5, 8:9, 11:13), as.factor)) # convert several columns to factors
+
+
+# ------------- SSID-only PAM stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_pam &lt;- subset(pam_df, species == &quot;SSID&quot;)
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_pam, aes(x = avg_FvFm)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_pam, aes(sample = avg_FvFm)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_pam_lm &lt;- lmer(avg_FvFm ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_pam)
+check_model(SSID_pam_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_pam_lm_trt &lt;- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = SSID_pam)
+compare_performance(SSID_pam_lm, SSID_pam_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+SSID_pam_lm_simple &lt;- lm(avg_FvFm ~ treatment, data = SSID_pam)
+AIC(SSID_pam_lm, SSID_pam_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_pam_lm_trt)
+anova(SSID_pam_lm_trt) 
+emmeans(SSID_pam_lm_trt, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID PAM model: SSID_pam_lm_trt &lt;- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = SSID_pam)
+
+
+
+# ------------- PSTR-only PAM stats
+
+PSTR_pam_full &lt;- subset(pam_df, species != &quot;SSID&quot;)
+table(PSTR_pam_full$treatment) # only n=1 for &#39;Transplant to NS&#39; so cutting that level
+
+PSTR_pam &lt;- PSTR_pam_full %&gt;% 
+  filter(treatment != &quot;Transplant to NS&quot;) %&gt;% # remove the treatment with n=1
+  filter(flag_ID != &quot;37&quot;) %&gt;% # remove sample with bad PAM (explain in methods)
+  droplevels()
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_pam, aes(x = avg_FvFm)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_pam, aes(sample = avg_FvFm)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_pam_lm &lt;- lmer(avg_FvFm ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_pam)
+check_model(PSTR_pam_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_pam_lm_trt &lt;- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = PSTR_pam)
+compare_performance(PSTR_pam_lm, PSTR_pam_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_pam_lm_simple &lt;- lm(avg_FvFm ~ treatment, data = PSTR_pam)
+AIC(PSTR_pam_lm, PSTR_pam_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_pam_lm_trt)
+anova(PSTR_pam_lm_trt) 
+emmeans(PSTR_pam_lm_trt, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR PAM model: PSTR_pam_lm_trt &lt;- lmer(avg_FvFm ~ treatment + (1 | colony_ID), data = PSTR_pam)
+
+
+# ------------ Followed this before subsetting data:
+##### Performed all the below with full PSTR sample and from that determined we needed to remove 2 samples:
+# the single Transplant to NS fragment
+# the bad PAM sample
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+#PSTR_pam_lm &lt;- lmer(avg_FvFm ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_pam)
+# throw singular fit warnging...
+#check_singularity(PSTR_pam_lm) # yes, singular so moving forward with add not interactive model
+#PSTR_pam_lm &lt;- lmer(avg_FvFm ~ transplant_envir + home_envir + (1 | colony_ID), data = PSTR_pam)
+# still throwing singular fit do dropping random effect and shifting to simple lm
+
+# PSTR_pam_lm &lt;- lm((avg_FvFm) ~ transplant_envir * home_envir, data = PSTR_pam)
+# check_model(PSTR_pam_lm) # use this to visually check model performance/assumptions: looks meh
+# check_heteroscedasticity(PSTR_pam_lm) # OK: Error variance appears to be homoscedastic (p = 0.112).
+# check_outliers(PSTR_pam_lm) # no corals considered outliers
+# 
+# summary(PSTR_pam_lm)
+# anova(PSTR_pam_lm) 
+# 
+# ## Exploring difference between 2-way, 1-way, and additive: additive is best according to AIC so moving forward # with this one!
+# PSTR_pam_lm_add &lt;- lm(log(avg_FvFm) ~ transplant_envir + home_envir, data = PSTR_pam)
+# PSTR_pam_lm_trt &lt;- lm(log(avg_FvFm) ~ treatment, data = PSTR_pam)
+# compare_performance(PSTR_pam_lm, PSTR_pam_lm_add, PSTR_pam_lm_trt)
+# 
+# check_model(PSTR_pam_lm_add) # use this to visually check model performance/assumptions: looks better
+# shapiro.test(residuals(PSTR_pam_lm_add))
+# # residual normality
+# shapiro.test(residuals(PSTR_pam_lm_add)) 
+# # W = 0.68253, p-value = 1.629e-06 --&gt; very non-normal so moving forward with removing bad PAM sample</code></pre>
+<p></p>
 </div>
 </div>
 <div id="chlorophyll-concentrations" class="section level1">
@@ -590,12 +750,12 @@ stats_FvFm</code></pre>
 <p></p>
 <pre class="r"><code>#Load data and format code
 #Chlorophyll data
-chlorophyll_data &lt;- read_csv(&quot;Lab Data/Chloropyll/chlorophyll_data.csv&quot;, 
+chlorophyll_data &lt;- read_csv(&quot;Raw_data/Lab Data/Chloropyll/chlorophyll_data.csv&quot;, 
                              col_types = cols(absorbance = col_character(), 
                                               absorbance_reading = col_number()))
 chl_samples&lt;-filter(chlorophyll_data, chl_source==&#39;sample&#39;)
 #Volume of tissue slurry
-chl_starting_volume &lt;- read_csv(&quot;Lab Data/Chloropyll/chl_starting_volume.csv&quot;, 
+chl_starting_volume &lt;- read_csv(&quot;Raw_data/Lab Data/Chloropyll/chl_starting_volume.csv&quot;, 
                                 col_types = cols(total_symbiont_slurry_volume_ml = col_number()))
 final_chl&lt;-merge(chl_samples, chl_starting_volume, by=&quot;sample_ID&quot;)
 
@@ -608,16 +768,18 @@ chl_abs_means&lt;- final_chl %&gt;%
 #Use the following equations to calculate chlorophyll concentration (which will be in ug/mL)
     #First account for the path length in absorbance values 
     #Again, the blank averages from each plate are...     
-        #Plate 5 Blank average = 0.07475
-        #Plate 6 Blank average = 0.074909
+        #Plate 5 Blank average = 0.07475 # calculated from plate reader (in lab notes)
+        #Plate 6 Blank average = 0.074909 # calculated from plate reader (in lab notes)
 chl_abs_means$blank&lt;-ifelse(chl_abs_means$plate_number==5, 0.07475, 0.074909)
-    #And the path lengths of each plate are...
-        #Plate 5 path length = 0.6493
-        #Plate 6 path length = 0.6445
+
+#And the path lengths of each plate are...
+        #Plate 5 path length = 0.6493 # reported from plate reader (in lab notes)
+        #Plate 6 path length = 0.6445 # reported from plate reader (in lab notes)
 chl_abs_means$pathlength&lt;-ifelse(chl_abs_means$plate_number==5, 0.6493, 0.6445)
-    #Equation for adjusting with path length is: abs(wavelength)=(abs-blank)/pathlength
+
+#Equation for adjusting with path length is: absor @ given wavelength = (absor-blank)/pathlength (from Warren 2008)
 chl_abs_means$adjusted_abs_value&lt;-(chl_abs_means$meanabsor - chl_abs_means$blank)/chl_abs_means$pathlength
-    #Then calculate concentrations using these equations:
+    #Then calculate concentrations using these equations from Ritchie (2006):
     #chla = -3.4551(A632) + 13.6849(A665)
     #chlc2 = 32.9371(A632) - 7.0140(A665)
 
@@ -625,7 +787,7 @@ chl_abs_means$adjusted_abs_value&lt;-(chl_abs_means$meanabsor - chl_abs_means$bl
 chl_abs_means_wider&lt;-chl_abs_means %&gt;%
   select(-c(meanabsor, sd, se)) %&gt;%
   pivot_wider(names_from= absorbance, values_from = adjusted_abs_value)
-view(chl_abs_means_wider)
+#View(chl_abs_means_wider)
 
 #Okay time to get the calculations in!
 chl_abs_means_wider$chla_ugml&lt;-((-3.4551*(chl_abs_means_wider$&quot;632&quot;)) + (13.6849*(chl_abs_means_wider$&quot;665&quot;)))
@@ -634,18 +796,18 @@ chl_abs_means_wider$chlc2_ugml&lt;-((32.9371*(chl_abs_means_wider$&quot;632&quot
   #(3) accommodate volumes of total tissue slurry bc want a count of ALL chlorophyll in the sample -- divide everything by 0.3846 (dilution factor) and multiply by 5 (for total mls)
 chl_abs_means_wider$chla_ug&lt;-(chl_abs_means_wider$chla_ugml * 5 / 0.3846)
 chl_abs_means_wider$chlc2_ug&lt;-(chl_abs_means_wider$chlc2_ugml * 5 / 0.3846)
-view(chl_abs_means_wider)
+#View(chl_abs_means_wider)
 
 #Prepare data for graphing
 #=====Raw data======
-sa_measurements&lt;-read_csv(&quot;~/Lab Data/backcalcs/sa_measurements.csv&quot;)
+sa_measurements&lt;-read_csv(&quot;Raw_data/Lab Data/backcalcs/sa_measurements.csv&quot;)
 chl_sa_analysis&lt;-merge(chl_abs_means_wider, sa_measurements, by=&quot;sample_ID&quot;)
 
 #back-calculate each chlorophyll concentration (a and c2) to ug/cm^2 and add coral treatments
 chl_sa_analysis$chla_ug_cm2&lt;- chl_sa_analysis$chla_ug / chl_sa_analysis$sample_area_cm2
 chl_sa_analysis$chlc2_ug_cm2&lt;- chl_sa_analysis$chlc2_ug / chl_sa_analysis$sample_area_cm2
 
-samples_treatments&lt;-read_csv(&quot;~/Lab Data/backcalcs/samples_treatments.csv&quot;)
+samples_treatments&lt;-read_csv(&quot;Raw_data/Lab Data/backcalcs/samples_treatments.csv&quot;)
 chl_ugcm2_treatments&lt;-merge(chl_sa_analysis, samples_treatments, by=&quot;sample_ID&quot;) #RERUNING THIS LINE SHOULD ACCOUNT FOR TREATMENTS FOR SSIDF3 and SSIDF18 
 
   # Fix treatment naming convention
@@ -656,7 +818,7 @@ chl_ugcm2_treatments$treatment&lt;-ifelse(chl_ugcm2_treatments$treatment == &#39
   
 
   #save chl concentration data for records, graphing, and statistic
-write_csv(chl_ugcm2_treatments, file=&quot;~/Cleaned_data/chl_data.csv&quot;)
+write_csv(chl_ugcm2_treatments, file=&quot;Cleaned_data/chl_data.csv&quot;)
 #write_xlsx(chl_ugcm2_treatments, path=&quot;~/Cleaned_data/chl_data.xlsx&quot;)</code></pre>
 <p></p>
 </div>
@@ -686,70 +848,109 @@ Chl_mean_plot_data &lt;- chl_ugcm2_treatments_noNA %&gt;%
             meanchlc2=mean(chlc2_ug_cm2), sdchlc2=sd(chlc2_ug_cm2), 
             nchlc2=n(), sechlc2=sdchlc2/sqrt(nchlc2))
 
+## CBB edit: what you were trying above:
+Chl_mean_plot_data$species &lt;- factor(Chl_mean_plot_data$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+chl_ugcm2_treatments_noNA$species &lt;- factor(chl_ugcm2_treatments_noNA$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+
 #======Begin graphing======
-pd = position_dodge(width = 0.3)
 
 #Graph plot of chlorophyll-a by species and transplant treatment 
 
-chla_Fig &lt;- ggplot(Chl_mean_plot_data, aes(x=treatment, y=meanchla, color=species))+
-  geom_point(size=3, position=pd)+
-  geom_point(data=chl_ugcm2_treatments_noNA, 
-             aes(x=treatment, y=chla_ug_cm2, color=species),
-             position=pd, size=2.5, alpha=0.3)+
-  geom_line(aes(group=species), position=pd)+
+chla_Fig &lt;- ggplot(data = Chl_mean_plot_data %&gt;% drop_na(), aes(x= factor(treatment, levels = c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=meanchla, color = species, group=species)) +
   geom_errorbar(aes(x=treatment, ymin=meanchla-sechla, ymax=meanchla+sechla), 
-                width=0.2, size=1, position=pd)+
-  facet_wrap(~home_envir, scales=&#39;free_x&#39;)+
-  theme_bw() +
-  theme(axis.title = element_text(size = 14), # make axes title text larger
-        axis.text = element_text(size = 12), # make axes text larger  
-        legend.title = element_text(size = 13), # make legend title larger 
-        legend.text = element_text(size = 13, face = &quot;italic&quot;), # make legend text larger
-        strip.text = element_text(size = 13)) +  # make text in facet title larger
+                width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=treatment, y=chla_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~home_envir, scales=&#39;free_x&#39;) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    legend.title = element_text(size = 13), # make legend title larger 
+    legend.text = element_text(size = 13, face = &quot;italic&quot;), # make legend text larger
+    strip.text = element_text(size = 14)) +  # make text in facet title larger 
   guides(color = guide_legend(title = &quot;Species&quot;)) + 
   xlab(&quot;Treatment&quot;) +
   ylab(&quot;Mean [chl-a] (ug/cm^2)&quot;)+
-  scale_color_manual(labels=c(&#39;P. strigosa&#39;, &#39;S. siderea&#39;), values = c(&quot;#384B6B&quot;, &quot;#E18A2A&quot;))
-  
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&#39;S. siderea&#39;, &#39;P. strigosa&#39;)) 
+
+chla_Fig2 &lt;- ggplot(data = Chl_mean_plot_data %&gt;% drop_na(), aes(x = transplant_envir, y=meanchla, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanchla-sechla, ymax=meanchla+sechla), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chla_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Native Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Mean [chl-a] (ug/cm^2)&quot;)
+
+
 # export graph as .jpg
-ggsave(&quot;Chla_Fig_Sep_12_26.jpg&quot;, plot=chla_Fig, path=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
+ggsave(&quot;Chla_Fig_Sep_17_26.jpg&quot;, plot=chla_Fig2, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
+
+
 
 
 #Graph plot of chlorophyll-c2 by species and transplant treatment
-chlc2_Fig &lt;- ggplot(Chl_mean_plot_data, aes(x=treatment, y=meanchlc2, color=species))+
-  geom_point(size=3, position=pd)+
-  geom_point(data=chl_ugcm2_treatments_noNA, 
-             aes(x=treatment, y=chlc2_ug_cm2, color=species),
-             position=pd, size=2.5, alpha=0.3)+
-  geom_line(aes(group=species), position=pd)+
+chlc2_Fig &lt;- ggplot(data = Chl_mean_plot_data %&gt;% drop_na(), aes(x= factor(treatment, levels = c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=meanchlc2, color = species, group=species)) +
   geom_errorbar(aes(x=treatment, ymin=meanchlc2-sechlc2, ymax=meanchlc2+sechlc2), 
-                width=0.2, size=1, position=pd)+
-  facet_wrap(~home_envir, scales=&#39;free_x&#39;)+
-  theme_bw() +
-  theme(axis.title = element_text(size = 14), # make axes title text larger
-        axis.text = element_text(size = 12), # make axes text larger  
-        legend.title = element_text(size = 13), # make legend title larger 
-        legend.text = element_text(size = 13, face = &quot;italic&quot;), # make legend text larger
-        strip.text = element_text(size = 13)) +  # make text in facet title larger
+                width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=treatment, y=chlc2_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~home_envir, scales=&#39;free_x&#39;) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    legend.title = element_text(size = 13), # make legend title larger 
+    legend.text = element_text(size = 13, face = &quot;italic&quot;), # make legend text larger
+    strip.text = element_text(size = 14)) +  # make text in facet title larger 
   guides(color = guide_legend(title = &quot;Species&quot;)) + 
   xlab(&quot;Treatment&quot;) +
   ylab(&quot;Mean [chl-c2] (ug/cm^2)&quot;)+
-  scale_color_manual(labels=c(&#39;P. strigosa&#39;, &#39;S. siderea&#39;), values = c(&quot;#384B6B&quot;, &quot;#E18A2A&quot;))
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&#39;S. siderea&#39;, &#39;P. strigosa&#39;)) 
+
+chlc2_Fig2 &lt;- ggplot(data = Chl_mean_plot_data %&gt;% drop_na(), aes(x = transplant_envir, y=meanchlc2, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=meanchlc2-sechlc2, ymax=meanchlc2+sechlc2), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = chl_ugcm2_treatments_noNA, aes(x=transplant_envir, y=chlc2_ug_cm2), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;Nearshore&quot;, &quot;Offshore&quot;)) +
+  scale_x_discrete(labels = c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Home Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Mean [chl-c2] (ug/cm^2)&quot;)
 
 # export graph as .jpg
-ggsave(&quot;Chlc2_Fig_Sep_12_26.jpg&quot;, plot=chlc2_Fig, path=&quot;~/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
+ggsave(&quot;Chlc2_Fig_Sep_17_26.jpg&quot;, plot=chlc2_Fig2, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
 
 #Save graphed raw data (w/out NA in transplant treatment) for statistical analysis 
-write_csv(chl_ugcm2_treatments_noNA, file=&quot;~/Cleaned_data/chl_noNA_data.csv&quot;)</code></pre>
+#write_csv(chl_ugcm2_treatments_noNA, file=&quot;Cleaned_data/chl_noNA_data.csv&quot;)</code></pre>
 <p></p>
 </div>
 <div id="statistical-analysis-for-chlorophyll-a" class="section level2">
 <h2>Statistical analysis for chlorophyll-a</h2>
 <p></p>
 <pre class="r"><code>#Load data 
-chl_analysis_data &lt;- read_csv(&quot;~/Cleaned_data/chl_noNA_data.csv&quot;, 
-    col_types = cols(chla_ug_cm2 = col_number(), 
-        chlc2_ug_cm2 = col_number()))
+#chl_analysis_data &lt;- read_csv(&quot;Cleaned_data/chl_noNA_data.csv&quot;, 
+#    col_types = cols(chla_ug_cm2 = col_number(), 
+#        chlc2_ug_cm2 = col_number()))
 
 #Test for normality
 
@@ -801,6 +1002,95 @@ stats_chla &lt;-chl_analysis_data %&gt;%
           count = n(),
           mean_chla = mean(chla_ug_cm2))
 stats_chla</code></pre>
+<p></p>
+<p></p>
+<pre class="r"><code># just renaming to make it shorter
+chla_df &lt;- chl_ugcm2_treatments_noNA %&gt;% 
+  mutate(across(c(19:22), as.factor)) %&gt;% # convert several columns to factors
+  mutate(colony_ID = str_extract(sample_ID, &quot;[0-9]&quot;)) # need to add colony ID for random effects
+
+
+# ------------- SSID-only Chla stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_chla &lt;- subset(chla_df, species == &quot;SSID&quot;)
+
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_chla, aes(x = chla_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_chla, aes(sample = chla_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_chla_lm &lt;- lmer(chla_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_chla)
+check_model(SSID_chla_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_chla_lm_trt &lt;- lmer(chla_ug_cm2 ~ treatment + (1 | colony_ID), data = SSID_chla)
+compare_performance(SSID_chla_lm, SSID_chla_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+SSID_chla_lm_simple &lt;- lm(chla_ug_cm2 ~ treatment, data = SSID_chla)
+AIC(SSID_chla_lm, SSID_chla_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_chla_lm_simple)
+anova(SSID_chla_lm_simple) 
+emmeans(SSID_chla_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID chl a model: SSID_chla_lm_simple &lt;- lm(chla_ug_cm2 ~ treatment, data = SSID_chla)
+
+
+
+# ------------- PSTR-only Chla stats
+
+PSTR_chla_full &lt;- subset(chla_df, species != &quot;SSID&quot;)
+table(PSTR_chla_full$treatment) # only n=1 for &#39;Transplant to NS&#39; so cutting that level
+
+PSTR_chla &lt;- PSTR_chla_full %&gt;% 
+  filter(treatment != &quot;Transplant to NS&quot;) %&gt;% # remove the treatment with n=1
+  droplevels()
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_chla, aes(x = chla_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 13) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_chla, aes(sample = chla_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_chla_lm &lt;- lmer(chla_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_chla)
+check_model(PSTR_chla_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_chla_lm_trt &lt;- lmer(chla_ug_cm2 ~ treatment + (1 | colony_ID), data = PSTR_chla)
+compare_performance(PSTR_chla_lm, PSTR_chla_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_chla_lm_simple &lt;- lm(chla_ug_cm2 ~ treatment, data = PSTR_chla)
+AIC(PSTR_chla_lm, PSTR_chla_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_chla_lm_simple)
+anova(PSTR_chla_lm_simple) 
+emmeans(PSTR_chla_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR chl a model: PSTR_chla_lm_simple &lt;- lm(chla_ug_cm2 ~ treatment, data = PSTR_chla)</code></pre>
 <p></p>
 </div>
 <div id="statistical-analysis-for-chlorophyll-c2" class="section level2">
@@ -863,6 +1153,78 @@ stats_chlc2 &lt;-chl_analysis_data %&gt;%
           mean_chlc2 = mean(chlc2_ug_cm2))
 stats_chlc2</code></pre>
 <p></p>
+<p></p>
+<pre class="r"><code># ------------- SSID-only Chlc2 stats
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_chla, aes(x = chlc2_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 12) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_chla, aes(sample = chlc2_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_chlc2_lm &lt;- lmer(chlc2_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_chla)
+check_model(SSID_chlc2_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_chlc2_lm_trt &lt;- lmer(chlc2_ug_cm2 ~ treatment + (1 | colony_ID), data = SSID_chla)
+compare_performance(SSID_chlc2_lm, SSID_chlc2_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+SSID_chlc2_lm_simple &lt;- lm(chlc2_ug_cm2 ~ treatment, data = SSID_chla)
+AIC(SSID_chlc2_lm, SSID_chlc2_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_chlc2_lm_simple)
+anova(SSID_chlc2_lm_simple) 
+emmeans(SSID_chlc2_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID chl c2 model: SSID_chlc2_lm_simple &lt;- lm(chlc2_ug_cm2 ~ treatment, data = SSID_chla)
+
+
+
+# ------------- PSTR-only Chla stats
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_chla, aes(x = chlc2_ug_cm2)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 6) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_chla, aes(sample = chlc2_ug_cm2)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_chlc2_lm &lt;- lmer(chlc2_ug_cm2 ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_chla)
+check_model(PSTR_chlc2_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_chlc2_lm_trt &lt;- lmer(chlc2_ug_cm2 ~ treatment + (1 | colony_ID), data = PSTR_chla)
+compare_performance(PSTR_chlc2_lm, PSTR_chlc2_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_chlc2_lm_simple &lt;- lm(chlc2_ug_cm2 ~ treatment, data = PSTR_chla)
+AIC(PSTR_chlc2_lm, PSTR_chlc2_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_chlc2_lm_simple)
+anova(PSTR_chlc2_lm_simple) 
+emmeans(PSTR_chlc2_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR chl c2 model: PSTR_chlc2_lm_simple &lt;- lm(chlc2_ug_cm2 ~ treatment, data = PSTR_chla)</code></pre>
+<p></p>
 </div>
 </div>
 <div id="mean-percent-change-in-buoyant-weight" class="section level1">
@@ -875,11 +1237,11 @@ we need to know who specifically they are?</strong></h2>
 <h2>Load data and organize</h2>
 <p></p>
 <pre class="r"><code>#Load and format code
-all_corals_and_TPs &lt;- read_csv(&quot;Field Data/BW/all_corals_and_TPs.csv&quot;, 
+all_corals_and_TPs &lt;- read_csv(&quot;Raw_data/Field Data/BW/all_corals_and_TPs.csv&quot;, 
                                col_types = cols(mortality = col_character(), 
                                                 bw = col_number(), bw_sd = col_number(), 
                                                 bw_se = col_number()))
-View(all_corals_and_TPs)
+#View(all_corals_and_TPs)
 all_corals_and_TPs &lt;- all_corals_and_TPs[,-7]
 
   #adding differentiation of transplant treatment
@@ -896,22 +1258,22 @@ BW_alive_TP_means&lt;-alive_corals_and_TPs %&gt;%
   group_by(species, treatment, timepoint) %&gt;%
   drop_na(treatment) %&gt;%
   summarize(meanBW=mean(bw), sdBW=sd(bw), n=n(), SEBW=(sdBW)/(sqrt(n)))
-view(BW_alive_TP_means)</code></pre>
+#View(BW_alive_TP_means)</code></pre>
 <p></p>
 </div>
 <div id="figure-creation-1" class="section level2">
 <h2>Figure creation</h2>
 <p></p>
 <pre class="r"><code>#Graph plot of % change in buoyant weight by species, transplant treatment, and time point 
-pd = position_dodge(width = 0.7)
+pd_bw = position_dodge(width = 0.7)
 new_species &lt;- c(&quot;PSTR&quot; = &quot;P. strigosa&quot;, &quot;SSID&quot; = &quot;S. siderea&quot;)
 
 BW_alive_TP_plot &lt;- ggplot(data= BW_alive_TP_means[!is.na(BW_alive_TP_means$treatment), ], 
       aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=meanBW, color=timepoint)) +
   geom_point(data = alive_corals_and_TPs[!is.na(alive_corals_and_TPs$treatment), ], 
-             aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=bw), position=pd, size=2, alpha=0.2) +
-  geom_errorbar(aes(ymin=meanBW-SEBW, ymax=meanBW+SEBW), position=pd, width=0.3) +
-  geom_point(size=2, position=pd) +
+             aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=bw), position=pd_bw, size=2, alpha=0.2) +
+  geom_errorbar(aes(ymin=meanBW-SEBW, ymax=meanBW+SEBW), position=pd_bw, width=0.3) +
+  geom_point(size=2, position=pd_bw) +
   xlab(&quot;Treatment&quot;) +
   ylab(&quot;Mean buoyant weight (g)&quot;) +
   guides(color = guide_legend(title = &quot;Time point&quot;)) + 
@@ -943,7 +1305,7 @@ BW_timepointcomparison_means &lt;-long_alive_corals %&gt;%
   group_by(species, treatment, timepoint_comparison) %&gt;%
   drop_na(percent_change_bw) %&gt;%
   summarize(meanchange=mean(percent_change_bw), sdchange=sd(percent_change_bw), n=n(), SEchange=(sdchange)/(sqrt(n)))
-view(BW_timepointcomparison_means)
+#View(BW_timepointcomparison_means)
 
 #Graph plot of percent change in buoyant weight by species and transplant treatment 
 ggplot(data=BW_timepointcomparison_means,  
@@ -959,8 +1321,9 @@ ggplot(data=BW_timepointcomparison_means,
   scale_color_manual(name = &quot;Timepoint comparison&quot;, labels=c(&#39;T0 - T1&#39;, &#39;T0 - T2&#39;, &#39;T0 - T3&#39;, &#39;T0 - T4&#39;, &#39;T3 - T4&#39;), values=c(&quot;#b22222&quot;, &quot;#228b21&quot;, &quot;#8b4500&quot;, &quot;#1f8fff&quot;,&quot;#7a5eb2&quot;))
   #ylim(0,11)+
 
-#Save raw data for statistical analysis 
-write_csv(long_alive_corals2, file=&quot;long_alive_corals&quot;)</code></pre>
+#Save raw data for statistical analysis --&gt; CBB: I cut this since you can just reread it below rather than save it as its own csv
+#write_csv(long_alive_corals2, file=&quot;long_alive_corals&quot;)
+longcoral &lt;- long_alive_corals2</code></pre>
 <p></p>
 <div id="updated-change-bw-figure-for-bem-poster" class="section level3">
 <h3>2/24/26 Updated % change BW figure for BEM poster</h3>
@@ -969,9 +1332,7 @@ write_csv(long_alive_corals2, file=&quot;long_alive_corals&quot;)</code></pre>
 make text larger - make border for each sub plot match PAM figure -
 change timepoints to months (T0 - T1) to (0 - 3)</p>
 <p></p>
-<pre class="r"><code>pd = position_dodge(width = 0.7) #increase the jitter width for this figure 
-
-BW_Change_Fig &lt;- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), 
+<pre class="r"><code>BW_Change_Fig &lt;- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), 
                                               y=meanchange, color=timepoint_comparison)) + #mean data
   geom_point(data=long_alive_corals2, 
              aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), 
@@ -992,10 +1353,67 @@ BW_Change_Fig &lt;- ggplot(data=BW_timepointcomparison_means, aes(x=factor(treat
         legend.text = element_text(size = 13)) + # make legend text larger
   xlab(&quot;Treatment&quot;) +
   ylab(&quot;Percent change in buoyant weight&quot;) + 
-  scale_color_manual(name = &quot;Months:&quot;, labels=c(&#39;0 - 3&#39;, &#39;0 - 9&#39;, &#39;0 - 17&#39;, &#39;0 - 60&#39;, &#39;17 - 60&#39;), values=c(&quot;#b22222&quot;, &quot;#228b21&quot;, &quot;#8b4500&quot;, &quot;#1f8fff&quot;,&quot;#7a5eb2&quot;))
+  scale_color_manual(name = &quot;Months:&quot;, labels=c(&#39;0 - 3&#39;, &#39;0 - 9&#39;, &#39;0 - 17&#39;, &#39;0 - 60&#39;, &#39;17 - 60&#39;), values=c(&quot;#b22222&quot;, &quot;#228b21&quot;, &quot;#8b4500&quot;, &quot;#1f8fff&quot;,&quot;#7a5eb2&quot;))</code></pre>
+<p></p>
+<p></p>
+<pre class="r"><code>bw_mean_df &lt;- BW_timepointcomparison_means %&gt;% 
+  mutate(treat = treatment) %&gt;% 
+  mutate(treat = gsub(&quot;NS Native&quot;, &quot;NS_NS&quot;, treat),
+         treat = gsub(&quot;OS Native&quot;, &quot;OS_OS&quot;, treat),
+         treat = gsub(&quot;Transplant to NS&quot;, &quot;OS_NS&quot;, treat),
+         treat = gsub(&quot;Transplant to OS&quot;, &quot;NS_OS&quot;, treat)) %&gt;% 
+  separate(treat, c(&quot;nat_env&quot;, &quot;tran_env&quot;))
+
+## CBB edit: what you were trying above:
+bw_mean_df$species &lt;- factor(bw_mean_df$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+long_alive_corals2$species &lt;- factor(long_alive_corals2$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+
+
+BW_Change_Fig2 &lt;- ggplot(data = bw_mean_df %&gt;% filter(timepoint_comparison == &quot;T0_T3&quot; | timepoint_comparison == &quot;T0_T4&quot; &amp; n &gt;= 2), aes(x = factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), y=meanchange, color = timepoint_comparison)) +
+  geom_errorbar(aes(x=factor(treatment, level=c(&#39;NS Native&#39;, &#39;Transplant to OS&#39;, &#39;OS Native&#39;, &#39;Transplant to NS&#39;)), ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.25, linewidth=0.7, position=pd) +
+  geom_point(size=3, position=pd) +
+  #geom_point(data = long_alive_corals2 %&gt;% filter(timepoint_comparison == &quot;T0_T4&quot;), aes(x=treatment, y=percent_change_bw), position=pjd, size=2.5, alpha=0.2) +
+  facet_wrap(~species, ncol = 1, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) + 
+  scale_color_manual(name = &quot;Months:&quot;, labels=c(&#39;0 - 17&#39;, &#39;0 - 60&#39;), values=c(&quot;#8b4500&quot;, &quot;#1f8fff&quot;)) +
+  theme_bw() + 
+  theme(strip.text.x = element_text(face=&quot;italic&quot;, size = 12),
+        axis.title = element_text(size = 15), # make axes title text larger
+        axis.text.y = element_text(size = 12), # make axes text larger
+        axis.text.x = element_text(size = 13), #angle = 10, vjust = 0.75),
+        legend.title = element_text(size = 14), # make legend title larger 
+        legend.text = element_text(size = 13)) + # make legend text larger
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Percent change in buoyant weight&quot;)
+
+
+
+
+
+
+
+# bw to match other phys figures
+BW_Change_Fig3 &lt;- ggplot(data = bw_mean_df %&gt;% filter(timepoint_comparison == &quot;T0_T4&quot; &amp; n &gt;= 2), aes(x = tran_env, y = meanchange, color = nat_env, group = nat_env)) +
+  geom_errorbar(aes(x=tran_env, ymin=meanchange-SEchange, ymax=meanchange+SEchange), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = long_alive_corals2 %&gt;% filter(timepoint_comparison == &quot;T0_T4&quot;), aes(x=transplant_site, y=percent_change_bw, color = collection_site, group = collection_site), position=pjd, size=2.5, alpha=0.2) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;Nearshore&quot;, &quot;Offshore&quot;)) +
+  scale_x_discrete(labels = c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Native Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Percent change in buoyant weight&quot;)
+  
+
 
 # export graph as .jpg 
-ggsave(&quot;BWChange_Fig_Sep_12_26.jpg&quot;, plot=BW_Change_Fig, path=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)</code></pre>
+ggsave(&quot;BWChange_Fig_Sep_17_26.jpg&quot;, plot=BW_Change_Fig3, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)</code></pre>
 <p></p>
 </div>
 </div>
@@ -1003,7 +1421,7 @@ ggsave(&quot;BWChange_Fig_Sep_12_26.jpg&quot;, plot=BW_Change_Fig, path=&quot;~/
 <h2>Statistical analysis</h2>
 <p></p>
 <pre class="r"><code>#Load data 
-longcoral&lt;-read_csv(&#39;long_alive_corals.csv&#39;)
+#longcoral&lt;-read_csv(&#39;long_alive_corals.csv&#39;)
 longcoral$species&lt;-ifelse(grepl(&quot;PSTR&quot;, longcoral$coral_ID), &quot;PSTR&quot;, &quot;SSID&quot;)
 
 #Test for normality
@@ -1033,7 +1451,7 @@ bw_results&lt;-TukeyHSD(aovbw1)
 
 #export results to sort outside of R
 tidy_bw&lt;-tidy(bw_results)
-view(tidy_bw)
+#View(tidy_bw)
 write.csv(tidy_bw, file = &quot;bw_results.csv&quot;)
 
 #Summary statistics 
@@ -1042,6 +1460,93 @@ stats_bw &lt;-longcoral %&gt;%
   summarise(
           count = n(),
           mean_perc_bw = mean(percent_change_bw))</code></pre>
+<p></p>
+<p></p>
+<pre class="r"><code># just renaming to make it shorter
+bw_df &lt;- longcoral %&gt;% 
+  mutate(colony_ID = factor(str_extract(ID, &quot;[0-9]&quot;))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only BW stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_bw &lt;- subset(bw_df, species == &quot;SSID&quot;) %&gt;% 
+  filter(timepoint_comparison == &quot;T0_T4&quot;)
+
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_bw, aes(x = percent_change_bw)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_bw, aes(sample = percent_change_bw)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_bw_lm &lt;- lmer(percent_change_bw ~ transplant_site * collection_site + (1 | colony_ID), data = SSID_bw)
+check_model(SSID_bw_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_bw_lm_trt &lt;- lmer(percent_change_bw ~ treatment + (1 | colony_ID), data = SSID_bw)
+compare_performance(SSID_bw_lm, SSID_bw_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for RE model and it is more biologically appropriate
+SSID_bw_lm_simple &lt;- lm(percent_change_bw ~ treatment, data = SSID_bw)
+AIC(SSID_bw_lm, SSID_bw_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_bw_lm_trt)
+anova(SSID_bw_lm_trt) 
+emmeans(SSID_bw_lm_trt, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID BW model: SSID_bw_lm_trt &lt;- lmer(percent_change_bw ~ treatment + (1 | colony_ID), data = SSID_bw)
+
+
+
+# ------------- PSTR-only BW stats
+
+# selecing for PSTR only:
+PSTR_bw &lt;- subset(bw_df, species != &quot;SSID&quot;) %&gt;% 
+  filter(timepoint_comparison == &quot;T0_T4&quot;) %&gt;% 
+  filter(treatment != &quot;Transplant to NS&quot;) # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): okay
+ggplot(PSTR_bw, aes(x = percent_change_bw)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 15) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_bw, aes(sample = percent_change_bw)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_bw_lm &lt;- lmer(percent_change_bw ~ transplant_site * collection_site + (1 | colony_ID), data = PSTR_bw)
+check_model(PSTR_bw_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_bw_lm_trt &lt;- lmer(percent_change_bw ~ treatment + (1 | colony_ID), data = PSTR_bw)
+compare_performance(PSTR_bw_lm, PSTR_bw_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_bw_lm_simple &lt;- lm(percent_change_bw ~ treatment, data = PSTR_bw)
+AIC(PSTR_bw_lm, PSTR_bw_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_bw_lm_simple)
+anova(PSTR_bw_lm_simple) 
+emmeans(PSTR_bw_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR BW model: PSTR_bw_lm_simple &lt;- lm(percent_change_bw ~ treatment, data = PSTR_bw)</code></pre>
 <p></p>
 </div>
 </div>
@@ -1055,7 +1560,7 @@ we need to know who specifically they are?</strong></h2>
 <h2>Load data and organize</h2>
 <p></p>
 <pre class="r"><code>#Load and format code
-sur &lt;- read.csv(&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Field Data/Mortality/mort_RT.csv&quot;)
+sur &lt;- read.csv(&quot;mort_RT.csv&quot;)
 sur&lt;-subset(sur, mortality!=&#39;missing&#39;) #remove 2 frags that went missing (glue detached)
 
 sur$treatment &lt;- ifelse(sur$collection_site == &quot;False Caye&quot; &amp; sur$transplant_site == &quot;False Caye&quot;, &quot;NS Native&quot;,
@@ -1082,22 +1587,21 @@ summary(ssid.PH)
 
 #Graph plot of mortality by species, transplant treatment, and time point  
 treat = c(&quot;NS Native&quot;, &quot;OS Native&quot;, &quot;Transplant to NS&quot;, &quot;Transplant to OS&quot;) # for treatment order
-color = c(&quot;#ff6045&quot;, &quot;#1e1175&quot;, &quot;#008eff&quot;, &quot;#98131d&quot;) # for colours 
+color = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;, &quot;#384B6B&quot;, &quot;#E18A2A&quot;) # for colours 
 size=c(12,9,4,4) #run for SSID plot
 size=c(16,12,6,3) #run for PSTR plot
 
 #P. strigosa
-plot(pstr.out, col=color, xaxt=&quot;n&quot;, lwd=size, xlab=&quot;Months after start of experiment&quot;, 
-     ylab=&quot;Fraction Surviving&quot;, main=&quot;PSTR survival by transplant site&quot;) 
+plot(pstr.out, col=color, xaxt=&quot;n&quot;, lwd=3, lty = c(1,1,2,2), xlab=&quot;Months after start of experiment&quot;, ylab=&quot;Fraction Surviving&quot;) 
 axis(side=1, at=c(0,3,9,17, 60)) # add x axis label for time points
-legend(&quot;bottomleft&quot;, col=color, lty=1, legend=treat, lwd=size, bty=&quot;n&quot;) # add legend
-legend(&quot;bottom&quot;, legend=c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot;)
+legend(&quot;bottomleft&quot;, col=color, lty=c(1,1,2,2), legend=treat, lwd=3, bty=&quot;n&quot;) # add legend
+legend(&quot;bottomright&quot;, legend=c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot;)
 
 #S. siderea
-plot(ssid.out, col=color, xaxt=&quot;n&quot;, lwd=size, xlab=&quot;Months after start of experiment&quot;, ylab=&quot;Fraction Surviving&quot;, main=&quot;SSID survival by transplant site&quot;) 
+plot(ssid.out, col=color, xaxt=&quot;n&quot;, lwd=3, lty = c(1,1,2,2), xlab=&quot;Months after start of experiment&quot;, ylab=&quot;Fraction Surviving&quot;) 
 axis(side=1, at=c(0,3,9,17, 60)) # add x axis label for time points
-legend(&quot;bottomleft&quot;, col=color, lty=1, legend=treat, lwd=size, bty=&quot;n&quot;) # add legend
-legend(&quot;bottom&quot;, legend=c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot;)</code></pre>
+legend(&quot;bottomleft&quot;, col=color, lty=c(1,1,2,2), legend=treat, lwd=3, bty=&quot;n&quot;) # add legend
+legend(&quot;bottomright&quot;, legend=c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot;)</code></pre>
 <p></p>
 </div>
 <div id="figure-creation-2" class="section level2">
@@ -1123,7 +1627,7 @@ library(survminer)
 
 #Import code
 sur &lt;- read.csv(&quot;mort_RT.csv&quot;)
-view(sur)
+#View(sur)
 
 sur&lt;-subset(sur, mortality!=&#39;missing&#39;) #remove 2 frags that went missing (glue detached)
 
@@ -1136,7 +1640,7 @@ sur$treatment &lt;-
       ifelse(sur$collection_site == &quot;False Caye&quot; &amp; sur$transplant_site == &quot;Silk Cayes&quot;, &quot;Transplant to OS&quot;,
       ifelse(sur$collection_site == &quot;Silk Cayes&quot; &amp; sur$transplant_site == &quot;Silk Cayes&quot;, &quot;OS Native&quot;,
       ifelse(sur$collection_site == &quot;Silk Cayes&quot; &amp; sur$transplant_site == &quot;False Caye&quot;, &quot;Transplant to NS&quot;, NA))))
-view(sur)
+#View(sur)
 
 # subset by species to perform analyses by species
 sur_pstr &lt;- subset(sur, species == &quot;PSTR&quot;)
@@ -1146,7 +1650,7 @@ sur_ssid &lt;- subset(sur, species == &quot;SSID&quot;)
 
 # Setting up data for graphing 
 ssid.r &lt;- Surv(sur_ssid$tod, sur_ssid$mort) # creates a survival object for use in survfit() function below
-view(ssid.r)
+#View(ssid.r)
 ssid.out &lt;- survfit(ssid.r ~ treatment, data = sur_ssid) # Computes an estimate of a survival curve based on transplant location using Kaplan-Meier; this will also be used for plotting
 ssid.out # view output to see mortality event and sample size summary stats
 
@@ -1183,7 +1687,7 @@ legend(&quot;bottom&quot;, legend=c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot
 
 # Setting up data 
 pstr.r &lt;- Surv(sur_pstr$tod, sur_pstr$mort) # creates a survival object for use in survfit() function below
-view(pstr.r)
+#View(pstr.r)
 pstr.out &lt;- survfit(pstr.r ~ treatment, data = sur_pstr) # Computes an estimate of a survival curve based on transplant location using Kaplan-Meier; this will also be used for plotting
 pstr.out # view output to see mortality event and sample size summary stats
 
@@ -1214,6 +1718,33 @@ axis(side=1, at=c(0,3,9,17, 60), cex.axis = 1.4) # add x axis label for time poi
 box(col = &quot;#384B6B&quot;, lwd = 10) # add color to outline the box
 legend(&quot;bottomleft&quot;, col=color, lty=1, legend=treat, lwd=size, bty=&quot;n&quot;, cex = 1.2) # add legend
 legend(&quot;bottom&quot;, legend=c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot;, cex = 2)</code></pre>
+<p></p>
+<p></p>
+<pre class="r"><code># Save as PDF
+#pdf(&quot;Final_figures/survival_Fig_Sep_17_26.pdf&quot;, width = 10, height = 4.5)
+png(&quot;Final_figures/survival_Fig_Sep_17_26.png&quot;, width = 10, height = 4.5, unit = &quot;in&quot;, res = 300)
+
+par(mfrow = c(1, 2))  # 1 row, 2 columns
+
+# --- Panel A: S. siderea ---
+plot(ssid.out, col = color, xaxt = &quot;n&quot;, lwd = 3, lty = c(1, 1, 2, 2),
+     xlab = &quot;Months after start of experiment&quot;,
+     ylab = &quot;Fraction Surviving&quot;,
+     main = &quot;A)  S. siderea survival&quot;)
+axis(side = 1, at = c(0, 3, 9, 17, 60))
+legend(&quot;bottomleft&quot;, col = color, lty = c(1, 1, 2, 2), legend = treat, lwd = 3, bty = &quot;n&quot;)
+legend(&quot;bottomright&quot;, legend = c(&quot;p &lt; 0.01&quot;), bty = &quot;n&quot;)
+
+# --- Panel B: P. strigosa ---
+plot(pstr.out, col = color, xaxt = &quot;n&quot;, lwd = 3, lty = c(1, 1, 2, 2),
+     xlab = &quot;Months after start of experiment&quot;,
+     ylab = &quot;Fraction Surviving&quot;,
+     main = &quot;B)  P. strigosa survival&quot;)
+axis(side = 1, at = c(0, 3, 9, 17, 60))
+legend(&quot;bottomleft&quot;, col = color, lty = c(1, 1, 2, 2), legend = treat, lwd = 3, bty = &quot;n&quot;)
+legend(&quot;bottomright&quot;, legend = c(&quot;p = 0.94&quot;), bty = &quot;n&quot;)
+
+dev.off()  # close and save the file</code></pre>
 <p></p>
 </div>
 </div>
@@ -1264,7 +1795,7 @@ mortality_ssid &lt;-sur_ssid %&gt;%
 <h2>Load data and organize</h2>
 <p></p>
 <pre class="r"><code>#Load and format code
-compiled_protein_assay_data &lt;- read_csv(&quot;~/Desktop/Honors Thesis/Lab Data/Proteins/compiled_protein_assay_data.csv&quot;, 
+compiled_protein_assay_data &lt;- read_csv(&quot;Raw_data/Lab Data/Proteins/compiled_protein_assay_data.csv&quot;, 
                                         col_types = cols(plate_number = col_character(), 
                                                          column = col_character(), 
                                                          replicate = col_character(), 
@@ -1311,13 +1842,13 @@ b_4 #-795.9618
 #Now we can have R calculate the protein concentration for each coral sample! Add these standard linear equation values into new columns in a dataframe of ONLY samples to calculate protein concentrations. 
 protein_samples&lt;-filter(compiled_protein_assay_data, protein_source==&#39;sample&#39;)
 
-protein_samples$m&lt;- ifelse(protein_samples$plate_number==3, 2247.697, 1976.897)
-protein_samples$b&lt;- ifelse(protein_samples$plate_number==3, -834.2771, -795.9618)
+protein_samples$m&lt;- ifelse(protein_samples$plate_number==3, m_3, m_4)
+protein_samples$b&lt;- ifelse(protein_samples$plate_number==3, b_3, b_4)
 protein_samples$calc_conc_ug_ml&lt;- protein_samples$m * protein_samples$absorbance_595 + protein_samples$b
 
     # PROTEIN SAMPLE REDOS -- 5 of our samples either had 1 negative calculated protein concentration value from the above analysis or had all 3 replicates with negative values.  
 #After uploading, the same code was used above to check concnetration values for redos
-protein_redos_compiled_data &lt;- read_csv(&quot;Lab Data/Proteins/protein_redos_compiled_data.csv&quot;, 
+protein_redos_compiled_data &lt;- read_csv(&quot;Raw_data/Lab Data/Proteins/protein_redos_compiled_data.csv&quot;, 
                                         col_types = cols(plate_number = col_character(), 
                                                          column = col_character(), protein_source = col_character(), 
                                                          replicate = col_character(), absorbance_595 = col_number(), 
@@ -1333,7 +1864,7 @@ redo_bsa_standard_curve &lt;- ggplot(data=protein_redo_standards, aes(x=absorban
 
 #Remove the weird values from redo standards 
     #BSA_750 rep 3, BSA_2000 all reps
-protein_redo_standards&lt;-redo_standards[-c(21,25,26,27),]
+protein_redo_standards&lt;-protein_redo_standards[-c(21,25,26,27),]
 
 sum_5&lt;-summary(lm(concentration_ug_ml ~ absorbance_595, data=protein_redo_standards))
 R2_5 &lt;- summary(lm(concentration_ug_ml ~ absorbance_595, data=protein_redo_standards))$r.squared
@@ -1344,8 +1875,8 @@ m_5 #953.964
 b_5 #-374.905
 
 protein_redo_samples&lt;-filter(protein_redos_compiled_data, protein_source==&#39;sample&#39;)
-protein_redo_samples$m&lt;- (953.964)
-protein_redo_samples$b&lt;- (-374.905)
+protein_redo_samples$m&lt;- m_5
+protein_redo_samples$b&lt;- b_5
 protein_redo_samples$calc_conc_ug_ml&lt;- protein_redo_samples$m * protein_redo_samples$absorbance_595 + protein_redo_samples$b
 
 #Combine the protein samples and the redo protein samples 
@@ -1355,21 +1886,38 @@ df_final_protein2&lt;-rbind(df_final_protein, protein_redo_samples)
 #Need to fix the name of PSTRS14 -- in there as 514!
 df_final_protein2$sample_ID&lt;-ifelse(df_final_protein2$sample_ID == &#39;PSTR514_1&#39;, &#39;PSTRS14_1&#39;, 
                                     as.character(df_final_protein2$sample_ID))
-view(df_final_protein2)
+#View(df_final_protein2)
 
 #Prepare data for graphing
 
   #Accounting for volume of tissue slurry in calculated protein concentrations 
-energy_starting_volume&lt;- read_csv(&quot;Lab Data/Proteins/energyreserve_starting_volume.csv&quot;, 
+energy_starting_volume&lt;- read_csv(&quot;Raw_data/Lab Data/Proteins/energyreserve_starting_volume.csv&quot;, 
                                   col_types = cols(total_tissue_slurry_volume_ml = col_number()))
 final_protein2&lt;-merge(df_final_protein2, energy_starting_volume, by=&quot;sample_ID&quot;)
 
 protein_abs_means&lt;- final_protein2 %&gt;%
   group_by(sample_ID) %&gt;%
-  summarise(meanabsor=mean(absorbance_595), sd=sd(absorbance_595), n=n(), se=sd/sqrt(n), meanvol=mean(total_tissue_slurry_volume_ml), m=mean(m), b=mean(b))
+  summarise(mean_pro=mean(calc_conc_ug_ml), 
+            sd=sd(calc_conc_ug_ml), 
+            n=n(), 
+            se=sd/sqrt(n), 
+            meanvol=mean(total_tissue_slurry_volume_ml), 
+            m=mean(m), 
+            b=mean(b))
 
-protein_abs_means$calc_conc_ug_ml&lt;- protein_abs_means$m * protein_abs_means$meanabsor + protein_abs_means$b
-protein_abs_means$final_protein_ug&lt;- protein_abs_means$calc_conc_ug_ml * protein_abs_means$meanvol 
+
+# protein_abs_means&lt;- final_protein2 %&gt;%
+#   group_by(sample_ID) %&gt;%
+#   summarise(meanabsor=mean(absorbance_595), 
+#             sd=sd(absorbance_595), 
+#             n=n(), 
+#             se=sd/sqrt(n), 
+#             meanvol=mean(total_tissue_slurry_volume_ml), 
+#             m=mean(m), 
+#             b=mean(b))
+
+#protein_abs_means$calc_conc_ug_ml2&lt;- protein_abs_means$m * protein_abs_means$meanabsor + protein_abs_means$b
+protein_abs_means$final_protein_ug&lt;- protein_abs_means$mean_pro * protein_abs_means$meanvol 
 
   #converting from ug to mg for direct comparsion to Baumann et al. 2021
 protein_abs_means$final_protein_mg&lt;- protein_abs_means$final_protein_ug / 1000
@@ -1381,7 +1929,7 @@ protein_abs_means$final_protein_mg&lt;- protein_abs_means$final_protein_ug / 100
 
 
   # (1) Back-calculating protein concentrations to biomass (mg) 
-BM_measurements &lt;- read_csv(&quot;~/Desktop/Honors Thesis/Lab Data/backcalcs/BM_measurements.csv&quot;, 
+BM_measurements &lt;- read_csv(&quot;Raw_data/Lab Data/backcalcs/BM_measurements.csv&quot;, 
                             col_types = cols(ash_free_dry_weight_g = col_number(), 
                                              dry_weight_volume_ml = col_number(), 
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
@@ -1396,7 +1944,7 @@ protein_bm_analysis&lt;-merge(protein_abs_means, BM_measurements, by=&quot;sampl
 protein_bm_analysis$protein_mg_mg&lt;- protein_bm_analysis$final_protein_mg / protein_bm_analysis$total_dry_weight_mg
 
 #Raw data
-samples_treatments &lt;- read_csv(&quot;Lab Data/backcalcs/samples_treatments.csv&quot;)
+samples_treatments &lt;- read_csv(&quot;Raw_data/Lab Data/backcalcs/samples_treatments.csv&quot;)
 protein_mg_mg_treatments&lt;-merge(protein_bm_analysis, samples_treatments, by=&quot;sample_ID&quot;)
 
   #fixing transplant treatment names
@@ -1404,7 +1952,7 @@ protein_mg_mg_treatments$treatment&lt;-ifelse(protein_mg_mg_treatments$treatment
 protein_mg_mg_treatments$treatment&lt;-ifelse(protein_mg_mg_treatments$treatment == &#39;Native OS&#39;, &#39;OS Native&#39;, as.character(protein_mg_mg_treatments$treatment))
 
   #save cleaned protein concentration (to biomass) data for records
-write_csv(protein_mg_mg_treatments, file=&quot;~/Cleaned_data/protein_data.csv&quot;)
+write_csv(protein_mg_mg_treatments, file=&quot;Cleaned_data/protein_data.csv&quot;)
 #write_xlsx(protein_mg_mg_treatments, path=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/protein_data.xlsx&quot;)
 
 
@@ -1415,15 +1963,15 @@ write_csv(protein_mg_mg_treatments, file=&quot;~/Cleaned_data/protein_data.csv&q
 #         avg_standard_area_pixels = col_number(), 
 #         avg_sa_fragment_pixels = col_number(),
 #         sample_area_cm2 = col_number()))
-# View(sa_measurements)
+# #View(sa_measurements)
 # 
 # #combine the datasets!
 # protein_sa_analysis&lt;-merge(protein_abs_means, sa_measurements, by=&quot;sample_ID&quot;)
-# view(protein_sa_analysis)
+# #View(protein_sa_analysis)
 # 
 # #now calculate mg/cm^2 -- type out the calculation necessary for this!
 # protein_sa_analysis$protein_mg_cm2&lt;- protein_sa_analysis$final_protein_mg / protein_sa_analysis$sample_area_cm2
-# view(protein_sa_analysis)
+# #View(protein_sa_analysis)
 # 
 #   #save carb concentration (mg/cm^2) data for records 
 # write_csv(protein_sa_analysis, file=&quot;all_corals_protein_mgcm2_data.csv&quot;)
@@ -1448,10 +1996,15 @@ Protein_BM_mean_plot_data &lt;- protein_mg_mg_treatments_noNA %&gt;%
   group_by(species, treatment, transplant_envir, home_envir) %&gt;%
   summarise(mean=mean(protein_mg_mg), sd=sd(protein_mg_mg), n=n(), se=sd/sqrt(n))
 
-#Graph plot of protein by species and transplant treatment 
-pd = position_dodge(width = 0.3)
 
-Protein_Fig &lt;- ggplot(Protein_BM_mean_plot_data, 
+## CBB edit: what you were trying above:
+Protein_BM_mean_plot_data$species &lt;- factor(Protein_BM_mean_plot_data$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+protein_mg_mg_treatments_noNA$species &lt;- factor(protein_mg_mg_treatments_noNA$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+
+
+#Graph plot of protein by species and transplant treatment 
+
+Protein_Fig &lt;- ggplot(Protein_BM_mean_plot_data %&gt;% drop_na(), 
        aes(x=treatment, y=mean, color=species))+
   geom_point(data=protein_mg_mg_treatments_noNA, 
              aes(x=treatment, y=protein_mg_mg, color=species), 
@@ -1472,11 +2025,31 @@ Protein_Fig &lt;- ggplot(Protein_BM_mean_plot_data,
   ylab(&quot;Mean [protein] (mg/mg)&quot;)+
   scale_color_manual(labels=c(&#39;P. strigosa&#39;, &#39;S. siderea&#39;), values = c(&quot;#384B6B&quot;, &quot;#E18A2A&quot;))
 
+
+Protein_Fig2 &lt;- ggplot(data = Protein_BM_mean_plot_data %&gt;% drop_na(), aes(x = transplant_envir, y=mean, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=mean-se, ymax=mean+se), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = protein_mg_mg_treatments_noNA, aes(x=transplant_envir, y=protein_mg_mg), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;NS&quot;, &quot;OS&quot;)) +
+  scale_x_discrete(labels = c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Native Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Mean [protein] (mg/mg)&quot;)
+
+
 # save image as a .jpeg
-ggsave(&quot;Protein_Fig_Sep_12_26.jpg&quot;, plot=Protein_Fig, path=&quot;~/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
+ggsave(&quot;Protein_Fig_Sep_17_26.jpg&quot;, plot=Protein_Fig2, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
 
 #Save graphed raw data (no NAs in transplant treatment) for statistical analysis 
-write_csv(protein_mg_mg_treatments_noNA, file=&quot;~/Cleaned_data/protein_noNA_data.csv&quot;)</code></pre>
+#write_csv(protein_mg_mg_treatments_noNA, file=&quot;Cleaned_data/protein_noNA_data.csv&quot;)</code></pre>
 <p></p>
 </div>
 <div id="statistical-analysis-for-proteins-backcalculated-to-biomass-mgmg" class="section level2">
@@ -1484,7 +2057,7 @@ write_csv(protein_mg_mg_treatments_noNA, file=&quot;~/Cleaned_data/protein_noNA_
 (mg/mg)</h2>
 <p></p>
 <pre class="r"><code>#Load data 
-protein_bm_data &lt;- read_csv(&quot;~/Cleaned_data/protein_noNA_data.csv&quot;,
+protein_bm_data &lt;- read_csv(&quot;Cleaned_data/protein_noNA_data.csv&quot;,
                             col_types = cols(protein_mg_mg = col_number()))
 
 #Test for normality
@@ -1538,6 +2111,91 @@ stats_proteins &lt;-protein_bm_data %&gt;%
           mean_protein = mean(protein_mg_mg))
 stats_proteins</code></pre>
 <p></p>
+<p></p>
+<pre class="r"><code># just renaming to make it shorter
+pro_df &lt;- protein_mg_mg_treatments_noNA %&gt;% 
+  mutate(colony_ID = factor(str_extract(sample_ID, &quot;[0-9]&quot;))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only protein stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_pro &lt;- subset(pro_df, species == &quot;SSID&quot;)
+
+
+# visual inspection of distribution (density + histogram): not terrible
+ggplot(SSID_pro, aes(x = protein_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_pro, aes(sample = protein_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_pro_lm &lt;- lmer(protein_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_pro)
+check_model(SSID_pro_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_pro_lm_trt &lt;- lmer(protein_mg_mg ~ treatment + (1 | colony_ID), data = SSID_pro)
+compare_performance(SSID_pro_lm, SSID_pro_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for RE model and it is more biologically appropriate
+SSID_pro_lm_simple &lt;- lm(protein_mg_mg ~ treatment, data = SSID_pro)
+AIC(SSID_pro_lm, SSID_pro_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_pro_lm_trt)
+anova(SSID_pro_lm_trt) 
+emmeans(SSID_pro_lm_trt, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID protein model: SSID_pro_lm_trt &lt;- lmer(protein_mg_mg ~ treatment + (1 | colony_ID), data = SSID_pro)
+
+
+
+# ------------- PSTR-only protein stats
+
+# selecing for PSTR only:
+PSTR_pro &lt;- subset(pro_df, species != &quot;SSID&quot;) %&gt;% 
+  filter(treatment != &quot;Transplant to NS&quot;) # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): okay
+ggplot(PSTR_pro, aes(x = protein_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_pro, aes(sample = protein_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_protein_lm &lt;- lmer(protein_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_pro)
+check_model(PSTR_protein_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_protein_lm_trt &lt;- lmer(protein_mg_mg ~ treatment + (1 | colony_ID), data = PSTR_pro)
+compare_performance(PSTR_protein_lm, PSTR_protein_lm_trt)
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple but RE if more biologically appropriate and does not significantly change interpretation
+PSTR_protein_lm_simple &lt;- lm(protein_mg_mg ~ treatment, data = PSTR_pro)
+AIC(PSTR_protein_lm, PSTR_protein_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_protein_lm_simple)
+anova(PSTR_protein_lm_simple) 
+emmeans(PSTR_protein_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR protein model: PSTR_protein_lm_simple &lt;- lm(protein_mg_mg ~ treatment, data = PSTR_pro)</code></pre>
+<p></p>
 </div>
 </div>
 <div id="carbohydrates" class="section level1">
@@ -1546,7 +2204,7 @@ stats_proteins</code></pre>
 <h2>Load data and organize</h2>
 <p></p>
 <pre class="r"><code>#Load and format code
-Carb_data &lt;- read_csv(&quot;Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_assay_data.csv&quot;, 
+Carb_data &lt;- read_csv(&quot;Raw_data/Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_assay_data.csv&quot;, 
                       col_types = cols(plate_number = col_character(), 
                                        row = col_character(), 
                                        column = col_character(), 
@@ -1588,11 +2246,11 @@ b_cplate5 #-0.191055
 #Now we can have R calculate the carbohydrate concentration for each coral sample! Add these standard linear equation values into new columns in a dataframe of ONLY samples to calculate carbohydrate concentrations. 
 carb_samples&lt;-filter(Carb_data, carb_source==&#39;sample&#39;)
 carb_samples$dilution&lt;-(0.1)
-carb_samples$m&lt;- ifelse(carb_samples$plate_number==4, 0.867211, 0.809757)
-carb_samples$b&lt;- ifelse(carb_samples$plate_number==4, -0.211298, -0.191055)
+carb_samples$m&lt;- ifelse(carb_samples$plate_number==4, m_cplate4, m_cplate5)
+carb_samples$b&lt;- ifelse(carb_samples$plate_number==4, b_cplate4, b_cplate5)
 
 #Also some coral samples required a rerun in the spectrometer. Therefore some sample replicates (with abosorbance values over those of the maximum concentration standards) were removed and added from their &quot;redo&quot; plate results. 
-redo_carb_data &lt;- read_csv(&quot;Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_redo_data.csv&quot;, col_types = cols(plate_number = col_character(), column = col_character(), replicate = col_character(), absorbance_485 = col_number(), concentration_mg_ml = col_number()))
+redo_carb_data &lt;- read_csv(&quot;Raw_data/Lab Data/Carbohydrates/Carbohydrate Assays - compiled_carb_redo_data.csv&quot;, col_types = cols(plate_number = col_character(), column = col_character(), replicate = col_character(), absorbance_485 = col_number(), concentration_mg_ml = col_number()))
 
 redo_carb_standards&lt;-filter(redo_carb_data, carb_source==&#39;standard&#39;)
 
@@ -1613,8 +2271,8 @@ m_cplate6 #0.920258
 b_cplate6 #-0.24104
 
 redo_carb_samples&lt;-filter(redo_carb_data, carb_source==&#39;sample&#39;)
-redo_carb_samples$m&lt;- (0.920258)
-redo_carb_samples$b&lt;- (-0.241039)
+redo_carb_samples$m&lt;- R2_cplate6
+redo_carb_samples$b&lt;- b_cplate6
 
 #Combine the carb samples and the redo carb samples 
 
@@ -1624,14 +2282,14 @@ carb_samples2&lt;-carb_samples[-c(7,8,9,28,29,30),-c(1)]
 redo_carb_samples2&lt;-redo_carb_samples[-c(1,2,3,10,11,12),]
 redo_carb_samples3&lt;-redo_carb_samples2[,-c(5)]
 redo_carb_samples3$dilution&lt;- ifelse(redo_carb_samples3$sample_ID==&quot;SSIDF20_3&quot;, 0.083, 0.067)
-view(redo_carb_samples3)
+#View(redo_carb_samples3)
 
 #combine data sets together
 df_final_carb&lt;-rbind(carb_samples2, redo_carb_samples3)
 
 #Prepare data for graphing
   #Accounting for volume of tissue slurry in calculated carbohydrate concentrations
-energy_starting_volume2 &lt;- read_csv(&quot;Lab Data/Proteins/energyreserve_starting_volume.csv&quot;, 
+energy_starting_volume2 &lt;- read_csv(&quot;Raw_data/Lab Data/Proteins/energyreserve_starting_volume.csv&quot;, 
                                           col_types = cols(total_tissue_slurry_volume_ml = col_number()))
 final_carb&lt;-merge(df_final_carb, energy_starting_volume2, by=&quot;sample_ID&quot;)
   
@@ -1646,16 +2304,16 @@ carb_abs_means$calc_conc_mg_ml&lt;- carb_abs_means$m * carb_abs_means$meanabsor 
 carb_abs_means$final_carb_mg&lt;- carb_abs_means$calc_conc_mg_ml * (carb_abs_means$dilution * carb_abs_means$meanvol) 
 
   # (1) Back-calculating carbohydrate concentrations to biomass (g) 
-BM_measurements &lt;- read_csv(&quot;Lab Data/backcalcs/BM_measurements.csv&quot;, 
+BM_measurements &lt;- read_csv(&quot;Raw_data/Lab Data/backcalcs/BM_measurements.csv&quot;, 
                             col_types = cols(ash_free_dry_weight_g = col_number(), 
                                              dry_weight_volume_ml = col_number(), 
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
 carb_bm_analysis&lt;-merge(carb_abs_means, BM_measurements, by=&quot;sample_ID&quot;)
 
-carb_bm_analysis$carb_mg_mg&lt;- carb_bm_analysis$final_carb_mg / (carb_bm_analysis$total_dry_weight_mg)
+carb_bm_analysis$carb_mg_mg&lt;- (carb_bm_analysis$final_carb_mg / (carb_bm_analysis$total_dry_weight_g*1000))
 
 #Raw data
-samples_treatments &lt;- read_csv(&quot;Lab Data/backcalcs/samples_treatments.csv&quot;)
+samples_treatments &lt;- read_csv(&quot;Raw_data/Lab Data/backcalcs/samples_treatments.csv&quot;)
 carb_mgmg_treatments&lt;-merge(carb_bm_analysis, samples_treatments, by=&quot;sample_ID&quot;)
   
   #fixing treatment names
@@ -1666,7 +2324,7 @@ carb_mgmg_treatments$treatment&lt;-ifelse(carb_mgmg_treatments$treatment == &#39
 
 
   #save carb concentration (mg/mg) data for records
-write_csv(carb_mgmg_treatments, file=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/carb_data.csv&quot;)
+write_csv(carb_mgmg_treatments, file=&quot;Cleaned_data/carb_data.csv&quot;)
 #write_xlsx(carb_mgmg_treatments, path=&quot;carb_data.xlsx&quot;)
 
 
@@ -1678,15 +2336,15 @@ write_csv(carb_mgmg_treatments, file=&quot;~/Desktop/Desktop - Callie’s MacBoo
 #         avg_standard_area_pixels = col_number(), 
 #         avg_sa_fragment_pixels = col_number(),
 #         sample_area_cm2 = col_number()))
-# View(sa_measurements)
+# #View(sa_measurements)
 # 
 # #combine the datasets!
 # carb_sa_analysis&lt;-merge(carb_abs_means, sa_measurements, by=&quot;sample_ID&quot;)
-# view(carb_sa_analysis)
+# #View(carb_sa_analysis)
 # 
 # #now calculate mg/cm^2 -- type out the calculation necessary for this!
 # carb_sa_analysis$carb_mg_cm2&lt;- carb_sa_analysis$final_carb_mg / carb_sa_analysis$sample_area_cm2
-# view(carb_sa_analysis)
+# #View(carb_sa_analysis)
 # 
 # 
 #   #save carb concentration (mg/cm^2) data for records 
@@ -1713,10 +2371,14 @@ carb_mgmg_treatments_noNA&lt;- carb_mgmg_treatments_noNA %&gt;%
 Carbs_BM_mean_plot_data &lt;- carb_mgmg_treatments_noNA %&gt;%
   group_by(species, treatment, transplant_envir, home_envir) %&gt;%
   summarise(mean=mean(carb_mg_mg), sd=sd(carb_mg_mg), n=n(), se=sd/sqrt(n))
-view(Carbs_BM_mean_plot_data)
+#View(Carbs_BM_mean_plot_data)
+
+
+## CBB edit: what you were trying above:
+Carbs_BM_mean_plot_data$species &lt;- factor(Carbs_BM_mean_plot_data$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+carb_mgmg_treatments_noNA$species &lt;- factor(carb_mgmg_treatments_noNA$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
 
 #Graph plot of carbohydrates by species and transplant treatment 
-pd = position_dodge(width = 0.3)
 
 Carbs_Fig &lt;- ggplot(Carbs_BM_mean_plot_data, 
                         aes(x=treatment, y=mean, color=species))+
@@ -1739,18 +2401,41 @@ Carbs_Fig &lt;- ggplot(Carbs_BM_mean_plot_data,
   ylab(&quot;Mean [carbohydrate] (mg/mg)&quot;)+
   scale_color_manual(labels=c(&#39;P. strigosa&#39;, &#39;S. siderea&#39;), values = c(&quot;#384B6B&quot;, &quot;#E18A2A&quot;))
 
+
+
+
+Carbs_Fig2 &lt;- ggplot(data = Carbs_BM_mean_plot_data %&gt;% drop_na(), aes(x = transplant_envir, y=mean, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=mean-se, ymax=mean+se), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = carb_mgmg_treatments_noNA, aes(x=transplant_envir, y=carb_mg_mg), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;NS&quot;, &quot;OS&quot;)) +
+  scale_x_discrete(labels = c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Native Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Mean [carbohydrate] (mg/mg)&quot;)
+
+
+
 # save image as a .jpeg
-ggsave(&quot;Carb_Fig_Sep_12_26.jpg&quot;, plot=Carbs_Fig, path=&quot;~/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
+ggsave(&quot;Carb_Fig_Sep_17_26.jpg&quot;, plot=Carbs_Fig2, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
 
 #Save graphed raw data (w/no NA for treatment) for statistical analysis 
-write_csv(carb_mgmg_treatments_noNA, file=&quot;~/Cleaned_data/carbs_noNA_data.csv&quot;)</code></pre>
+#write_csv(carb_mgmg_treatments_noNA, file=&quot;Cleaned_data/carbs_noNA_data.csv&quot;)</code></pre>
 <p></p>
 </div>
 <div id="statistical-analysis-3" class="section level2">
 <h2>Statistical analysis</h2>
 <p></p>
 <pre class="r"><code>#Load data 
-carbs_bm_data &lt;- read_csv(&quot;~/Cleaned_data/carbs_noNA_data.csv&quot;,
+carbs_bm_data &lt;- read_csv(&quot;Cleaned_data/carbs_noNA_data.csv&quot;,
                             col_types = cols(carb_mg_mg = col_number()))
 #Test for normality
 
@@ -1805,6 +2490,95 @@ stats_carbs &lt;-carbs_bm_data %&gt;%
           mean_carbs = mean(carb_mg_mg))
 stats_carbs</code></pre>
 <p></p>
+<p></p>
+<pre class="r"><code># just renaming to make it shorter
+carb_df &lt;- carb_mgmg_treatments_noNA %&gt;% 
+  mutate(colony_ID = factor(str_extract(sample_ID, &quot;[0-9]&quot;))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only carbs stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_carb &lt;- subset(carb_df, species == &quot;SSID&quot;)
+
+
+# visual inspection of distribution (density + histogram): not terrible
+ggplot(SSID_carb, aes(x = carb_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 12) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_carb, aes(sample = carb_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_carb_lm &lt;- lmer(carb_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_carb)
+check_model(SSID_carb_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# throwing singular fit so need to do simple LM
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_carb_lm_trt &lt;- lmer(carb_mg_mg ~ treatment + (1 | colony_ID), data = SSID_carb)
+compare_performance(SSID_carb_lm, SSID_carb_lm_trt)
+# still singular
+
+## Exploring simple vs random effect model: 
+# Singular fit from RE so just doing simple LM
+SSID_carb_lm_simple &lt;- lm(carb_mg_mg ~ treatment, data = SSID_carb)
+AIC(SSID_carb_lm, SSID_carb_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_carb_lm_simple)
+anova(SSID_carb_lm_simple) 
+emmeans(SSID_carb_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID carbs model: SSID_carb_lm_simple &lt;- lm(carb_mg_mg ~ treatment, data = SSID_carb)
+
+
+
+# ------------- PSTR-only carbs stats
+
+# selecing for PSTR only:
+PSTR_carb &lt;- subset(carb_df, species != &quot;SSID&quot;) %&gt;% 
+  filter(treatment != &quot;Transplant to NS&quot;) # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_carb, aes(x = carb_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_carb, aes(sample = carb_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_carb_lm &lt;- lmer(carb_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_carb)
+check_model(PSTR_carb_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# singular fit
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_carb_lm_trt &lt;- lmer(carb_mg_mg ~ treatment + (1 | colony_ID), data = PSTR_carb)
+compare_performance(PSTR_carb_lm, PSTR_carb_lm_trt)
+# still singular fit
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple and singular fit for RE
+PSTR_carb_lm_simple &lt;- lm(carb_mg_mg ~ treatment, data = PSTR_carb)
+AIC(PSTR_carb_lm, PSTR_carb_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_carb_lm_simple)
+anova(PSTR_carb_lm_simple) 
+emmeans(PSTR_carb_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR carbs model: PSTR_carb_lm_simple &lt;- lm(carb_mg_mg ~ treatment, data = PSTR_carb)</code></pre>
+<p></p>
 </div>
 </div>
 <div id="lipids" class="section level1">
@@ -1814,12 +2588,12 @@ stats_carbs</code></pre>
 <p></p>
 <pre class="r"><code>#Load data set
 
-Lipid_data &lt;- read_csv(&quot;~/Lab Data/Lipids/compiled_lipid_data.csv&quot;, 
+Lipid_data &lt;- read_csv(&quot;Raw_data/Lab Data/Lipids/compiled_lipid_data.csv&quot;, 
     col_types = cols(plate_number = col_character(), 
         column = col_character(), replicate = col_character(), 
         blank_correction_absorbance_540 = col_number(), 
         concentration_mg_ml = col_number()))
-View(Lipid_data)
+#View(Lipid_data)
 
 #This document is using values received from a spectrometer to calculate the concentration of lipids from each coral sample. First a lipid standard is created from plotting the absorbance of known lipid concentrations (standards)
 lipid_standards&lt;-filter(Lipid_data, lipid_source==&#39;standard&#39;)
@@ -1856,12 +2630,12 @@ b_lplate2 #0.009980
 #Now we can have R calculate the lipid concentration for each coral sample! Add these standard linear equation values into new columns in a dataframe of samples to estimate lipid concentration
 lipid_samples&lt;-filter(Lipid_data, lipid_source==&#39;sample&#39;) 
 lipid_samples$dilution&lt;-(1360/600)
-lipid_samples$m&lt;- ifelse(lipid_samples$plate_number==1, 1.7596, 1.34222) 
-lipid_samples$b&lt;- ifelse(lipid_samples$plate_number==1, -0.019183, 0.009980)
+lipid_samples$m&lt;- ifelse(lipid_samples$plate_number==1, m_lplate1, m_lplate2) 
+lipid_samples$b&lt;- ifelse(lipid_samples$plate_number==1, b_lplate1, b_lplate2)
 
 #Prepare sample data for graphing
 #Accounting for volume of tissue slurry in calculated carbohydrate concentrations
-energy_starting_volume &lt;- read_csv(&quot;Lab Data/Proteins/energyreserve_starting_volume.csv&quot;, 
+energy_starting_volume &lt;- read_csv(&quot;Raw_data/Lab Data/Proteins/energyreserve_starting_volume.csv&quot;, 
                                     col_types = cols(total_tissue_slurry_volume_ml = col_number()))
 final_lipid&lt;-merge(lipid_samples, energy_starting_volume, by=&quot;sample_ID&quot;)
 
@@ -1874,7 +2648,7 @@ lipid_abs_means$calc_conc_mg_ml&lt;- lipid_abs_means$m * lipid_abs_means$meanabs
 lipid_abs_means$final_lipid_mg&lt;- lipid_abs_means$calc_conc_mg_ml * lipid_abs_means$meanvol * lipid_abs_means$dilution  
 
   # (1) Back-calculating lipid concentrations to biomass (g) 
-BM_measurements &lt;- read_csv(&quot;Lab Data/backcalcs/BM_measurements.csv&quot;, 
+BM_measurements &lt;- read_csv(&quot;Raw_data/Lab Data/backcalcs/BM_measurements.csv&quot;, 
                             col_types = cols(ash_free_dry_weight_g = col_number(), 
                                              dry_weight_volume_ml = col_number(), 
                                              total_volume_ml = col_number(), total_dry_weight_g = col_number()))
@@ -1883,10 +2657,10 @@ BM_measurements &lt;- read_csv(&quot;Lab Data/backcalcs/BM_measurements.csv&quot
 lipid_bm_analysis&lt;-merge(lipid_abs_means, BM_measurements, by=&quot;sample_ID&quot;)
 
 #calculate concentration mg/mg
-lipid_bm_analysis$lipid_mg_mg&lt;- lipid_bm_analysis$final_lipid_mg / (lipid_bm_analysis$total_dry_weight_mg)
+lipid_bm_analysis$lipid_mg_mg&lt;- lipid_bm_analysis$final_lipid_mg / (lipid_bm_analysis$total_dry_weight_g*1000)
 
   #assign treatments to samples
-samples_treatments &lt;- read_csv(&quot;Lab Data/backcalcs/samples_treatments.csv&quot;)
+samples_treatments &lt;- read_csv(&quot;Raw_data/Lab Data/backcalcs/samples_treatments.csv&quot;)
 
 lipid_mgmg_treatments&lt;-merge(lipid_bm_analysis, samples_treatments, by=&quot;sample_ID&quot;)
 
@@ -1898,7 +2672,7 @@ lipid_mgmg_treatments$treatment&lt;-ifelse(lipid_mgmg_treatments$treatment == &#
 
 
 #save lipid concentration (mg/mg) data for records
-write_csv(lipid_mgmg_treatments, file=&quot;~/Cleaned_data/lipid_data.csv&quot;)
+write_csv(lipid_mgmg_treatments, file=&quot;Cleaned_data/lipid_data.csv&quot;)
 #write_xlsx(lipid_mgmg_treatments, path=&quot;~/Cleaned_data/lipid_data.xlsx&quot;)
 
   # (2) Back-calculating lipid concentrations to surface area (cm^2)
@@ -1907,15 +2681,15 @@ write_csv(lipid_mgmg_treatments, file=&quot;~/Cleaned_data/lipid_data.csv&quot;)
 #                                              avg_standard_area_pixels = col_number(), 
 #                                              avg_sa_fragment_pixels = col_number(),
 #                                              sample_area_cm2 = col_number()))
-# View(sa_measurements)
+# #View(sa_measurements)
 # 
 # #combine the datasets!
 # lipid_sa_analysis&lt;-merge(lipid_abs_means, sa_measurements, by=&quot;sample_ID&quot;)
-# view(lipid_sa_analysis)
+# #View(lipid_sa_analysis)
 # 
 # #calculate concentration mg/cm2
 # lipid_sa_analysis$lipid_mg_cm2&lt;- lipid_sa_analysis$final_lipid_mg / lipid_sa_analysis$sample_area_cm2
-# view(lipid_sa_analysis)
+# #View(lipid_sa_analysis)
 # 
 #   #save lipid concentration (mg/cm2) data for records
 # write_csv(lipid_sa_analysis, file=&quot;all_corals_lipid_mgcm2_data.csv&quot;)
@@ -1941,10 +2715,14 @@ lipid_mgmg_treatments_noNA&lt;- lipid_mgmg_treatments_noNA %&gt;%
 Lipids_BM_mean_plot_data &lt;- lipid_mgmg_treatments_noNA %&gt;%
   group_by(species, treatment, transplant_envir, home_envir) %&gt;%
   summarise(mean=mean(lipid_mg_mg), sd=sd(lipid_mg_mg), n=n(), se=sd/sqrt(n))
-view(Lipids_BM_mean_plot_data)
+#View(Lipids_BM_mean_plot_data)
+
+## CBB edit: what you were trying above:
+Lipids_BM_mean_plot_data$species &lt;- factor(Lipids_BM_mean_plot_data$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+lipid_mgmg_treatments_noNA$species &lt;- factor(lipid_mgmg_treatments_noNA$species, levels = c(&quot;SSID&quot;,&quot;PSTR&quot;))
+
 
 #Graph plot of carbohydrates by species and transplant treatment 
-pd = position_dodge(width = 0.3)
 
 Lipids_Fig &lt;- ggplot(Lipids_BM_mean_plot_data, 
        aes(x=treatment, y=mean, color=species))+
@@ -1967,18 +2745,40 @@ Lipids_Fig &lt;- ggplot(Lipids_BM_mean_plot_data,
   ylab(&quot;Mean [lipid] (mg/mg)&quot;)+
   scale_color_manual(labels=c(&#39;P. strigosa&#39;, &#39;S. siderea&#39;), values = c(&quot;#384B6B&quot;, &quot;#E18A2A&quot;))
 
+
+
+
+
+Lipids_Fig2 &lt;- ggplot(data = Lipids_BM_mean_plot_data %&gt;% drop_na(), aes(x = transplant_envir, y=mean, color = home_envir, group = home_envir)) +
+  geom_errorbar(aes(x=transplant_envir, ymin=mean-se, ymax=mean+se), width=0.2, linewidth=1, position=pd) +
+  geom_line(position=pd) +
+  geom_point(size=3, position=pd) +
+  geom_point(data = lipid_mgmg_treatments_noNA, aes(x=transplant_envir, y=lipid_mg_mg), position=pjd, size=2.5, alpha=0.3) +
+  facet_wrap(~species, scales=&#39;free_x&#39;, labeller = labeller(species = c(&quot;SSID&quot; = &quot;S. siderea&quot;, &quot;PSTR&quot; = &quot;P. strigosa&quot;))) +
+  scale_color_manual(values = c(&quot;#E18A2A&quot;, &quot;#384B6B&quot;), labels=c(&quot;NS&quot;, &quot;OS&quot;)) +
+  scale_x_discrete(labels = c(&quot;NS&quot;, &quot;OS&quot;)) +
+  theme_bw() + 
+  theme(
+    axis.title = element_text(size = 15), # make axes title text larger
+    axis.text = element_text(size = 12), # make axes text larger  
+    #legend.title = element_blank(), # remove legend title 
+    strip.text = element_text(size = 14, face = &quot;italic&quot;)) +  # make text in facet title larger &amp; italic
+  guides(color = guide_legend(title = &quot;Native Environment&quot;)) + 
+  xlab(&quot;Transplant Environment&quot;) +
+  ylab(&quot;Mean [lipid] (mg/mg)&quot;)
+
 # save image as a .jpeg
-ggsave(&quot;Lipid_Fig_Sep_12_26.jpg&quot;, plot=Lipids_Fig, path=&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
+ggsave(&quot;Lipid_Fig_Sep_17_26.jpg&quot;, plot=Lipids_Fig2, path=&quot;Final_figures&quot;, width = 10, height = 5, units = &quot;in&quot;, dpi = 600)
 
 #Save graphed raw data for statistical analysis 
-write_csv(lipid_mgmg_treatments_noNA, file=&quot;~/Cleaned_data/lipid_noNA_data.csv&quot;)</code></pre>
+#write_csv(lipid_mgmg_treatments_noNA, file=&quot;Cleaned_data/lipid_noNA_data.csv&quot;)</code></pre>
 <p></p>
 </div>
 <div id="statistical-analysis-4" class="section level2">
 <h2>Statistical analysis</h2>
 <p></p>
 <pre class="r"><code>#Load data 
-lipids_bm_data &lt;- read_csv(&quot;~/Desktop/Desktop - Callie’s MacBook Pro/Undergrad Research /Honors Thesis/Publication/Cleaned_data/lipid_noNA_data.csv&quot;,
+lipids_bm_data &lt;- read_csv(&quot;Cleaned_data/lipid_noNA_data.csv&quot;,
                             col_types = cols(lipid_mg_mg = col_number()))
 
 #Test for normality
@@ -2033,6 +2833,239 @@ stats_lipids &lt;-lipids_bm_data %&gt;%
           count = n(),
           mean_carbs = mean(lipid_mg_mg))
 stats_lipids</code></pre>
+<p></p>
+<p></p>
+<pre class="r"><code># just renaming to make it shorter
+lipid_df &lt;- lipid_mgmg_treatments_noNA %&gt;% 
+  mutate(colony_ID = factor(str_extract(sample_ID, &quot;[0-9]&quot;))) # need to add colony ID for random effects
+
+
+# ------------- SSID-only lipid stats
+## going to move forward with a model per species so separating into two different dfs starting with SSID:
+SSID_lipid &lt;- subset(lipid_df, species == &quot;SSID&quot;)
+
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(SSID_lipid, aes(x = lipid_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 12) +
+  geom_density()
+
+# visual inspection of Q-Q plot: some outliers on extremes
+ggplot(SSID_lipid, aes(sample = lipid_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;)
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+SSID_lipid_lm &lt;- lmer(lipid_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = SSID_lipid)
+check_model(SSID_lipid_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# throwing singular fit so need to do simple LM
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+SSID_lipid_lm_trt &lt;- lmer(lipid_mg_mg ~ treatment + (1 | colony_ID), data = SSID_lipid)
+compare_performance(SSID_lipid_lm, SSID_lipid_lm_trt)
+# still singular
+
+## Exploring simple vs random effect model: 
+# Singular fit from RE so just doing simple LM
+SSID_lipid_lm_simple &lt;- lm(lipid_mg_mg ~ treatment, data = SSID_lipid)
+AIC(SSID_lipid_lm, SSID_lipid_lm_simple)
+
+
+# Stats output for selected model
+summary(SSID_lipid_lm_simple)
+anova(SSID_lipid_lm_simple) 
+emmeans(SSID_lipid_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final SSID lipid model: SSID_lipid_lm_simple &lt;- lm(lipid_mg_mg ~ treatment, data = SSID_lipid)
+
+
+
+# ------------- PSTR-only lipid stats
+
+# selecing for PSTR only:
+PSTR_lipid &lt;- subset(lipid_df, species != &quot;SSID&quot;) %&gt;% 
+  filter(treatment != &quot;Transplant to NS&quot;) # remove the treatment with n=1
+
+# visual inspection of distribution (density + histogram): skewed
+ggplot(PSTR_lipid, aes(x = lipid_mg_mg)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10) +
+  geom_density()
+
+# visual inspection of Q-Q plot: couple outliers on extremes
+ggplot(PSTR_lipid, aes(sample = lipid_mg_mg)) +
+  stat_qq() +
+  stat_qq_line(color = &quot;coral&quot;) 
+
+
+
+## Since coral fragments may come from the same colony, we are going to run LMER with random effect of colony
+PSTR_lipid_lm &lt;- lmer(lipid_mg_mg ~ transplant_envir * home_envir + (1 | colony_ID), data = PSTR_lipid)
+check_model(PSTR_lipid_lm) # use this to visually check model performance/assumptions. Looks good for these data!
+# singular fit
+
+## Exploring difference between 2-way and 1-way: no difference so proceeding with the one-way since we have to drop a treatment level
+PSTR_lipid_lm_trt &lt;- lmer(lipid_mg_mg ~ treatment + (1 | colony_ID), data = PSTR_lipid)
+compare_performance(PSTR_lipid_lm, PSTR_lipid_lm_trt)
+# still singular fit
+
+## Exploring simple vs random effect model: 
+# AIC is lower (i.e., better model fit) for simple and singular fit for RE
+PSTR_lipid_lm_simple &lt;- lm(lipid_mg_mg ~ treatment, data = PSTR_lipid)
+AIC(PSTR_lipid_lm, PSTR_lipid_lm_simple)
+
+
+# Stats output for selected model
+summary(PSTR_lipid_lm_simple)
+anova(PSTR_lipid_lm_simple) 
+emmeans(PSTR_lipid_lm_simple, pairwise ~ treatment, adjust = &quot;tukey&quot;)
+
+## Final PSTR lipid model: PSTR_lipid_lm_simple &lt;- lm(lipid_mg_mg ~ treatment, data = PSTR_lipid)</code></pre>
+<p></p>
+</div>
+<div id="saving-stats-tables-in-word-docs" class="section level2">
+<h2>Saving stats tables in word docs</h2>
+<p>This isn’t pretty, but it will do for now!</p>
+<p></p>
+<pre class="r"><code># Install and load
+library(modelsummary)
+library(tinytable)
+library(flextable)
+
+
+## all SSID params
+
+# Put models in a named list for clean column headers
+SSID_models_list &lt;- list(&quot;Calcification&quot; = SSID_bw_lm_trt,
+                         &quot;Fv/Fm&quot; = SSID_pam_lm_trt, 
+                         &quot;Protein&quot; = SSID_pro_lm_trt, 
+                         &quot;Lipid&quot; = SSID_lipid_lm_simple, 
+                         &quot;Carbs&quot; = SSID_carb_lm_simple,
+                         &quot;Chl a&quot; = SSID_chla_lm_simple, 
+                         &quot;Chl c&quot; = SSID_chlc2_lm_simple
+                         )
+
+# Generate a publication-ready table (SSID only)
+modelsummary(SSID_models_list, 
+             output = &quot;Tables/SSID_model_summary.docx&quot;,
+             stars = TRUE,            
+             gof_omit = &quot;AIC|BIC|ICC|Log.Lik.|RMSE&quot;,
+             coef_rename = c(
+               &quot;(Intercept)&quot; = &quot;Intercept (NS Native)&quot;,
+               &quot;treatmentOS Native&quot; = &quot;OS Native&quot;,
+               &quot;treatmentTransplant to NS&quot; = &quot;Transplant to NS&quot;,
+               &quot;treatmentTransplant to OS&quot; = &quot;Transplant to OS&quot;)
+             ) %&gt;% 
+  group_tt(j = list(`Mixed Effects Model` = 2:4, `Linear Model` = 5:8))
+
+
+
+SSID_contrasts &lt;- lapply(names(SSID_models_list), function(param) {
+  emm &lt;- emmeans(SSID_models_list[[param]], pairwise ~ treatment, adjust = &quot;tukey&quot;)
+  as.data.frame(emm$contrasts) %&gt;%
+    mutate(parameter = param)
+}) %&gt;%
+  bind_rows() %&gt;%
+  # add significance stars
+  mutate(
+    stars = case_when(
+      p.value &lt; 0.001 ~ &quot;***&quot;,
+      p.value &lt; 0.01  ~ &quot;**&quot;,
+      p.value &lt; 0.05  ~ &quot;*&quot;,
+      p.value &lt; 0.1   ~ &quot;.&quot;,
+      TRUE            ~ &quot;&quot;
+    ),
+    # round numeric columns
+    across(where(is.numeric), ~ round(., 3))
+  ) %&gt;%
+  select(parameter, contrast, estimate, SE, df, p.value, stars)
+
+
+
+
+SSID_contrasts %&gt;%
+  flextable() %&gt;%
+  set_header_labels(
+    parameter = &quot;Parameter&quot;,
+    contrast  = &quot;Contrast&quot;,
+    estimate  = &quot;Estimate&quot;,
+    SE        = &quot;SE&quot;,
+    df        = &quot;df&quot;,
+    p.value   = &quot;p-value&quot;,
+    stars     = &quot;&quot;
+  ) %&gt;%
+  merge_v(j = &quot;parameter&quot;) %&gt;%       # merge repeated parameter labels
+  valign(j = &quot;parameter&quot;, valign = &quot;top&quot;) %&gt;%
+  theme_booktabs() %&gt;%
+  autofit() %&gt;%
+  save_as_docx(path = &quot;Tables/SSID_emmeans_contrasts.docx&quot;)
+
+
+
+
+
+
+
+
+PSTR_models_list &lt;- list(&quot;Fv/Fm&quot; = PSTR_pam_lm_trt,
+                         &quot;Calcification&quot; = PSTR_bw_lm_simple,
+                         &quot;Protein&quot; = PSTR_bw_lm_simple, 
+                         &quot;Lipid&quot; = PSTR_lipid_lm_simple, 
+                         &quot;Carbs&quot; = PSTR_carb_lm_simple,
+                         &quot;Chl a&quot; = PSTR_chla_lm_simple, 
+                         &quot;Chl c&quot; = PSTR_chlc2_lm_simple
+                         )
+
+# Generate a publication-ready table (PSTR only)
+modelsummary(PSTR_models_list, 
+             output = &quot;Tables/PSTR_model_summary.docx&quot;,
+             stars = TRUE,            
+             gof_omit = &quot;AIC|BIC|ICC|Log.Lik.|RMSE&quot;,
+             coef_rename = c(
+               &quot;(Intercept)&quot; = &quot;Intercept (NS Native)&quot;,
+               &quot;treatmentOS Native&quot; = &quot;OS Native&quot;,
+               &quot;treatmentTransplant to NS&quot; = &quot;Transplant to NS&quot;,
+               &quot;treatmentTransplant to OS&quot; = &quot;Transplant to OS&quot;)
+) %&gt;% 
+  group_tt(j = list(`Mixed Effects Model` = 2, `Linear Model` = 3:8))
+
+
+
+PSTR_contrasts &lt;- lapply(names(PSTR_models_list), function(param) {
+  emm &lt;- emmeans(PSTR_models_list[[param]], pairwise ~ treatment, adjust = &quot;tukey&quot;)
+  as.data.frame(emm$contrasts) %&gt;%
+    mutate(parameter = param)
+}) %&gt;%
+  bind_rows() %&gt;%
+  mutate(
+    stars = case_when(
+      p.value &lt; 0.001 ~ &quot;***&quot;,
+      p.value &lt; 0.01  ~ &quot;**&quot;,
+      p.value &lt; 0.05  ~ &quot;*&quot;,
+      p.value &lt; 0.1   ~ &quot;.&quot;,
+      TRUE            ~ &quot;&quot;
+    ),
+    across(where(is.numeric), ~ round(., 3))
+  ) %&gt;%
+  select(parameter, contrast, estimate, SE, df, p.value, stars)
+
+PSTR_contrasts %&gt;%
+  flextable() %&gt;%
+  set_header_labels(
+    parameter = &quot;Parameter&quot;,
+    contrast  = &quot;Contrast&quot;,
+    estimate  = &quot;Estimate&quot;,
+    SE        = &quot;SE&quot;,
+    df        = &quot;df&quot;,
+    p.value   = &quot;p-value&quot;,
+    stars     = &quot;&quot;
+  ) %&gt;%
+  merge_v(j = &quot;parameter&quot;) %&gt;%
+  valign(j = &quot;parameter&quot;, valign = &quot;top&quot;) %&gt;%
+  theme_booktabs() %&gt;%
+  autofit() %&gt;%
+  save_as_docx(path = &quot;Tables/PSTR_emmeans_contrasts.docx&quot;)</code></pre>
 <p></p>
 </div>
 </div>
